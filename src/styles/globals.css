@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand — exact values from the Kaviya Roadways design system reference */
+  --color-brand-navy-50: #eef2fb;
+  --color-brand-navy-100: #d7e0f5;
+  --color-brand-navy-200: #b0c1eb;
+  --color-brand-navy-300: #7f9bdc;
+  --color-brand-navy-400: #4d6dc4;
+  --color-brand-navy-500: #2b47a8;
+  --color-brand-navy-600: #24398f;
+  --color-brand-navy-700: #1e3a8a;
+  --color-brand-navy-800: #14225c;
+  --color-brand-navy-900: #101c49;
+
+  --color-brand-blue-400: #5b8bf0;
+  --color-brand-blue-500: #2563eb;
+  --color-brand-blue-600: #1e58c2;
+
+  --color-brand-orange-400: #f7b955;
+  --color-brand-orange-500: #f59e0b;
+  --color-brand-orange-600: #c67c08;
+
+  /* Semantic tokens (light) — Primary #1E3A8A · Secondary #2563EB ·
+     Accent #F59E0B · Success #10B981 · Danger #EF4444 · Neutral #64748B */
+  --color-background: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef1f6;
+  --color-border: #e2e5ee;
+  --color-foreground: #16192b;
+  --color-muted-foreground: #64748b;
+
+  --color-primary: var(--color-brand-navy-700);
+  --color-primary-foreground: #ffffff;
+  --color-chrome: var(--color-brand-navy-700);
+  --color-chrome-foreground: #ffffff;
+  --color-secondary: var(--color-brand-blue-500);
+  --color-secondary-foreground: #ffffff;
+  --color-accent: var(--color-brand-orange-500);
+  --color-accent-foreground: #2c1600;
+
+  --color-success: #10b981;
+  --color-warning: var(--color-brand-orange-500);
+  --color-danger: #ef4444;
+  --color-info: var(--color-brand-blue-500);
+
+  --font-sans: 'Poppins', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-card: 0 1px 2px rgba(16, 28, 73, 0.04), 0 4px 16px rgba(16, 28, 73, 0.06);
+}
+
+.dark {
+  --color-background: #0d1120;
+  --color-surface: #131834;
+  --color-surface-muted: #1a2040;
+  --color-border: #262c4d;
+  --color-foreground: #eef0fa;
+  --color-muted-foreground: #99a3b8;
+
+  --color-primary: var(--color-brand-navy-300);
+  --color-primary-foreground: #0d1120;
+  --color-chrome: var(--color-brand-navy-800);
+  --color-chrome-foreground: #ffffff;
+  --color-secondary: var(--color-brand-blue-400);
+  --color-secondary-foreground: #0d1120;
+  --color-accent: var(--color-brand-orange-400);
+  --color-accent-foreground: #2c1600;
+  --color-info: var(--color-brand-blue-400);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-orange-500);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 999px;
+  }
+}
