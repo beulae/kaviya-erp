@@ -7,7 +7,7 @@ services:
       target: development
     container_name: kaviya-erp-frontend
     ports:
-      - "5173:5173"
+      - "5174:5173"
     volumes:
       - .:/app
       - /app/node_modules
@@ -23,5 +23,5 @@ services:
       target: production
     container_name: kaviya-erp-nginx
     ports:
-      - "8080:80"
+      - "8081:80"
     profiles: ["prod"]

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs } from '@/components/ui/tabs'
@@ -21,6 +22,7 @@ const TABS = [
 export default function ProfilePage() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [tab, setTab] = React.useState('profile')
 
   return (
@@ -35,6 +37,9 @@ export default function ProfilePage() {
           <p className="text-sm text-[var(--color-muted-foreground)]">{user?.companyName}</p>
           <Button size="sm" variant="outline" className="mt-4 w-full">
             Change Photo
+          </Button>
+          <Button size="sm" variant="ghost" className="mt-2 w-full" onClick={() => navigate('/profile/transporter')}>
+            Edit Transporter Profile
           </Button>
         </Card>
 

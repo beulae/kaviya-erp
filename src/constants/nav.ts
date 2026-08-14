@@ -63,7 +63,14 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: 'Reports', to: '/reports', icon: BarChart3 },
   { label: 'Settings', to: '/settings', icon: Settings },
-  { label: 'Profile', to: '/profile', icon: UserRound },
+  {
+    label: 'Profile',
+    icon: UserRound,
+    children: [
+      { label: 'My Profile', to: '/profile' },
+      { label: 'Transporter Profile', to: '/profile/transporter' },
+    ],
+  },
 ]
 
 export { FileText, ClipboardList, Send, Users, Route, Building2, Receipt, BookOpen }

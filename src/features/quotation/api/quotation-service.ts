@@ -26,7 +26,10 @@ export async function createQuotation(payload: Partial<Quotation>): Promise<Quot
   const rate = payload.rate || 0
   const gstPercent = payload.gstPercent ?? 5
   const discount = payload.discount || 0
-  const total = Math.round(rate * (1 + gstPercent / 100) - discount)
+  // Prefer an explicitly computed total (e.g. Freight Amount With GST from the
+  // quotation wizard) and only fall back to the legacy rate/GST/discount
+  // calculation when the caller hasn't supplied one.
+  const total = payload.total ?? Math.round(rate * (1 + gstPercent / 100) - discount)
   const created: Quotation = {
     id: `quote-${Date.now()}`,
     quotationNumber: `KRW-Q${Math.floor(Math.random() * 9000 + 1000)}`,
@@ -42,6 +45,7 @@ export async function createQuotation(payload: Partial<Quotation>): Promise<Quot
     total,
     validity: payload.validity || new Date(Date.now() + 7 * 864e5).toISOString(),
     status: 'draft',
+    detail: payload.detail,
   }
   MOCK_QUOTATIONS.unshift(created)
   return created

@@ -24,6 +24,7 @@ import DriversPage from '@/features/drivers/pages/drivers-page'
 import VehiclesPage from '@/features/vehicles/pages/vehicles-page'
 
 import ProfilePage from '@/features/profile/pages/profile-page'
+import EditProfilePage from '@/features/profile/pages/edit-profile-page'
 import SettingsPage from '@/features/settings/pages/settings-page'
 
 import { ComingSoonPage } from '@/components/common/coming-soon'
@@ -79,6 +80,7 @@ export function AppRouter() {
           />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/transporter" element={<EditProfilePage />} />
         </Route>
       </Route>
 
