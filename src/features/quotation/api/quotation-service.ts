@@ -5,8 +5,11 @@ export interface QuotationListParams {
   page?: number
   pageSize?: number
   search?: string
+  searchFields?: string
   status?: string
 }
+
+const QUOTATION_SEARCH_FIELDS = 'quotationNumber,customerName,companyName,materialName,from,to'
 
 function normalizeListResponse(responseData: unknown): { data: Quotation[]; total: number } {
   if (responseData && typeof responseData === 'object') {
@@ -36,6 +39,7 @@ export async function fetchQuotations(params: QuotationListParams = {}): Promise
       page,
       pageSize,
       ...(search ? { search } : {}),
+      ...(search ? { searchFields: QUOTATION_SEARCH_FIELDS } : {}),
       ...(status ? { status } : {}),
     },
   })

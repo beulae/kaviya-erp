@@ -20,12 +20,18 @@ export default function QuotationListPage() {
   const { toast } = useToast()
   const { user } = useAuth()
   const [search, setSearch] = React.useState('')
+  const [debouncedSearch, setDebouncedSearch] = React.useState('')
   const [showFilters, setShowFilters] = React.useState(false)
   const [page, setPage] = React.useState(1)
   const [expandedIds, setExpandedIds] = React.useState<Set<string | number>>(new Set())
   const [deleteId, setDeleteId] = React.useState<string | number | null>(null)
 
-  const { data, isLoading } = useQuotations({ search, page, pageSize: PAGE_SIZE })
+  React.useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => window.clearTimeout(timeoutId)
+  }, [search])
+
+  const { data, isLoading } = useQuotations({ search: debouncedSearch, page, pageSize: PAGE_SIZE })
   const deleteQuotation = useDeleteQuotation()
   const { download, downloadingId } = useDownloadQuotationPdf()
 
@@ -79,7 +85,7 @@ export default function QuotationListPage() {
           <div className="relative max-w-sm">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
             <Input
-              placeholder="Search quotation no. or customer…"
+              placeholder="Search quotation no., customer, company, material, from or to…"
               className="pl-9"
               value={search}
               onChange={(e) => {
@@ -103,7 +109,7 @@ export default function QuotationListPage() {
           <p className="text-sm text-[var(--color-muted-foreground)]">No quotations found</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           {quotations.map((quotation) => {
             const id = quotation.id
             if (id === undefined || id === null) return null
@@ -164,7 +170,7 @@ export default function QuotationListPage() {
         loading={deleteQuotation.isPending}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
-      />
+      />                          
     </div>
   )
 }
