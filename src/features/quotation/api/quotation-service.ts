@@ -1,52 +1,63 @@
 import type { Quotation } from '@/types/quotation'
-import { MOCK_QUOTATIONS } from '@/services/mock-data'
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+import { apiClient } from '@/api/axios-instance'
 
 export interface QuotationListParams {
+  page?: number
+  pageSize?: number
   search?: string
   status?: string
 }
 
-export async function fetchQuotations(params: QuotationListParams = {}): Promise<{ data: Quotation[]; total: number }> {
-  await delay(350)
-  let result = [...MOCK_QUOTATIONS]
-  if (params.search) {
-    const q = params.search.toLowerCase()
-    result = result.filter(
-      (r) => r.quotationNumber.toLowerCase().includes(q) || r.customerName.toLowerCase().includes(q),
-    )
+function normalizeListResponse(responseData: unknown): { data: Quotation[]; total: number } {
+  if (responseData && typeof responseData === 'object') {
+    const data = 'data' in responseData ? (responseData as { data?: unknown }).data : undefined
+    const total = 'total' in responseData ? Number((responseData as { total?: unknown }).total ?? 0) : undefined
+
+    if (Array.isArray(data)) {
+      return {
+        data: data as Quotation[],
+        total: Number.isFinite(total) ? Number(total) : data.length,
+      }
+    }
   }
-  if (params.status) result = result.filter((r) => r.status === params.status)
-  return { data: result, total: result.length }
+
+  if (Array.isArray(responseData)) {
+    return { data: responseData as Quotation[], total: responseData.length }
+  }
+
+  return { data: [], total: 0 }
+}
+
+export async function fetchQuotations(params: QuotationListParams = {}): Promise<{ data: Quotation[]; total: number }> {
+  const { page = 1, pageSize = 20, search, status } = params
+
+  const { data } = await apiClient.get('/transport-quotations', {
+    params: {
+      page,
+      pageSize,
+      ...(search ? { search } : {}),
+      ...(status ? { status } : {}),
+    },
+  })
+
+  return normalizeListResponse(data)
+}
+
+export async function fetchQuotationById(id: string | number): Promise<Quotation | undefined> {
+  const response = await apiClient.get(`/transport-quotations/${id}`)
+  return response.data?.data ?? response.data ?? undefined
 }
 
 export async function createQuotation(payload: Partial<Quotation>): Promise<Quotation> {
-  await delay(450)
-  const rate = payload.rate || 0
-  const gstPercent = payload.gstPercent ?? 5
-  const discount = payload.discount || 0
-  // Prefer an explicitly computed total (e.g. Freight Amount With GST from the
-  // quotation wizard) and only fall back to the legacy rate/GST/discount
-  // calculation when the caller hasn't supplied one.
-  const total = payload.total ?? Math.round(rate * (1 + gstPercent / 100) - discount)
-  const created: Quotation = {
-    id: `quote-${Date.now()}`,
-    quotationNumber: `KRW-Q${Math.floor(Math.random() * 9000 + 1000)}`,
-    date: new Date().toISOString(),
-    customerName: payload.customerName || '',
-    vehicleType: payload.vehicleType || '',
-    pickup: payload.pickup || '',
-    destination: payload.destination || '',
-    weightKg: payload.weightKg || 0,
-    rate,
-    gstPercent,
-    discount,
-    total,
-    validity: payload.validity || new Date(Date.now() + 7 * 864e5).toISOString(),
-    status: 'draft',
-    detail: payload.detail,
-  }
-  MOCK_QUOTATIONS.unshift(created)
-  return created
+  const response = await apiClient.post('/transport-quotations', payload)
+  return response.data?.data ?? response.data
+}
+
+export async function updateQuotation(id: number | string, payload: Partial<Quotation>): Promise<Quotation> {
+  const response = await apiClient.put(`/transport-quotations/${id}`, payload)
+  return response.data?.data ?? response.data
+}
+
+export async function deleteQuotation(id: number | string): Promise<void> {
+  await apiClient.delete(`/transport-quotations/${id}`)
 }

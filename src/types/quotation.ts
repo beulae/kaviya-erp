@@ -72,21 +72,40 @@ export interface QuotationDetail {
   hideGeneratedDatetimeFromPdf: boolean
 }
 
+export interface QuotationAddress {
+  addressType: 'FROM' | 'TO'
+  sequenceNo: number
+  address: string
+}
+
+export interface QuotationMaterial {
+  numberOfArticle: number
+  length: number
+  width: number
+  height: number
+}
+
 export interface Quotation {
-  id: string
-  quotationNumber: string
-  date: string
-  customerName: string
-  vehicleType: string
-  pickup: string
-  destination: string
-  weightKg: number
-  rate: number
-  gstPercent: number
-  discount: number
-  total: number
-  validity: string
-  status: QuotationStatus
+  id?: string | number
+  quotationNumber?: string
+  date?: string
+  quotationGeneratedDate?: string
+  customerName?: string
+  companyName?: string
+  vehicleType?: string
+  pickup?: string
+  destination?: string
+  addresses?: QuotationAddress[]
+  materials?: QuotationMaterial[]
+  weightKg?: number
+  rate?: number
+  gstPercent?: number
+  discount?: number
+  total?: number
+  totalFreight?: number
+  validity?: string
+  quotationValidUpto?: string
+  status?: QuotationStatus
   /** Complete wizard payload, present for quotations created via the new form. */
   detail?: QuotationDetail
 }

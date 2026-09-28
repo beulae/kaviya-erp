@@ -45,22 +45,24 @@ export const quotationEnquiryMaterialSchema = z.object({
 })
 
 // --- Step 3: Trip Details ------------------------------------------------------------
+
+export const quotationLocationSchema = z.object({
+  value: z.string().trim().min(1, 'Address is required'),
+})
+
 export const quotationTripSchema = z.object({
   loadType: z.enum(['Full Load', 'Part Load'], { error: 'Select a load type' }),
-
   fromAddresses: z
-    .array(z.string().trim().min(1, 'Address is required'))
+    .array(quotationLocationSchema)
     .min(1, 'At least one pickup address is required')
     .max(5, 'Maximum 5 pickup addresses allowed'),
   toAddresses: z
-    .array(z.string().trim().min(1, 'Address is required'))
+    .array(quotationLocationSchema)
     .min(1, 'At least one delivery address is required')
     .max(5, 'Maximum 5 delivery addresses allowed'),
-
   loadingDate: z.string().optional().or(z.literal('')),
   tripType: z.enum(['Oneway', 'Round'], { error: 'Select a trip type' }),
 })
-
 // --- Step 4: Vehicle & Freight -------------------------------------------------------
 export const quotationVehicleFreightSchema = z.object({
   vehicleType: z.string().min(1, 'Select a vehicle type'),

@@ -18,6 +18,7 @@ import EditBiltyPage from '@/features/bilty/pages/edit-bilty-page'
 
 import QuotationListPage from '@/features/quotation/pages/quotation-list-page'
 import CreateQuotationPage from '@/features/quotation/pages/create-quotation-page'
+import ViewQuotationPage from '@/features/quotation/pages/view-quotation-page'
 
 import CustomersPage from '@/features/customers/pages/customers-page'
 import DriversPage from '@/features/drivers/pages/drivers-page'
@@ -60,6 +61,8 @@ export function AppRouter() {
 
           <Route path="/quotation" element={<QuotationListPage />} />
           <Route path="/quotation/create" element={<CreateQuotationPage />} />
+          <Route path="/quotation/:id/view" element={<ViewQuotationPage />} />
+          <Route path="/quotation/:id/edit" element={<CreateQuotationPage />} />
 
           <Route path="/operations/loading-advice" element={<ComingSoonPage title="Loading Advice" />} />
           <Route path="/operations/dispatch" element={<ComingSoonPage title="Dispatch" />} />

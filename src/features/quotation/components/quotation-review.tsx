@@ -84,11 +84,15 @@ export function QuotationReview({ values }: QuotationReviewProps) {
           <Row label="Loading Date" value={dateOrDash(values.loadingDate)} />
           <div className="pt-2">
             <p className="mb-1 text-xs font-medium text-[var(--color-muted-foreground)]">From</p>
-            <p className="text-sm text-[var(--color-foreground)]">{values.fromAddresses.filter(Boolean).join(' • ')}</p>
+            <p className="text-sm text-[var(--color-foreground)]">
+              {values.fromAddresses.map((a) => a.value).filter(Boolean).join(' • ')}
+            </p>
           </div>
           <div className="pt-2">
             <p className="mb-1 text-xs font-medium text-[var(--color-muted-foreground)]">To</p>
-            <p className="text-sm text-[var(--color-foreground)]">{values.toAddresses.filter(Boolean).join(' • ')}</p>
+            <p className="text-sm text-[var(--color-foreground)]">
+              {values.toAddresses.map((a) => a.value).filter(Boolean).join(' • ')}
+            </p>
           </div>
         </ReviewSection>
 

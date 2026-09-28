@@ -30,7 +30,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (theme !== 'system') return
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const listener = () => setResolvedTheme(getSystemTheme())
+    const listener = () => {
+      const resolved = getSystemTheme()
+      setResolvedTheme(resolved)
+      document.documentElement.classList.toggle('dark', resolved === 'dark')
+    }
     mq.addEventListener('change', listener)
     return () => mq.removeEventListener('change', listener)
   }, [theme])

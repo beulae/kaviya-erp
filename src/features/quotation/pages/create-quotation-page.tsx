@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/toaster'
 import { formatCurrency } from '@/utils/format'
 
 import { createQuotationSchema, type CreateQuotationFormValues } from '../schemas/quotation-schema'
-import { useCreateQuotation } from '../api/use-quotation'
+import { useCreateQuotation, useQuotation, useUpdateQuotation } from '../api/use-quotation'
 import { mapQuotationFormToPayload } from '../api/quotation-mapper'
 import {
   calculateFreight,
@@ -116,11 +116,133 @@ const STEPS = [
   { key: 'review', label: 'Review & Generate', fields: [] },
 ] as const
 
+const mapQuotationToFormValues = (quotation: any): Partial<CreateQuotationFormValues> => ({
+  quotationNo: Number(quotation?.quotationNumber?.match(/\d+/)?.[0] ?? quotation?.detail?.quotationNo ?? 0),
+  quotationDate: quotation?.quotationGeneratedDate || quotation?.date || todayIso(),
+  companyName: quotation?.companyName || quotation?.detail?.companyName || '',
+  companyContactNo: quotation?.detail?.companyContactNo || quotation?.contactNumber || '',
+  companyGstNo: quotation?.detail?.companyGstNo || quotation?.gstNumber || '',
+  companyAddress: quotation?.detail?.companyAddress || quotation?.companyAddress || '',
+  enquiryDate: quotation?.detail?.enquiryDate || '',
+  referenceDocumentId: quotation?.detail?.referenceDocumentId || '',
+  enquiryByPerson: quotation?.detail?.enquiryByPerson || '',
+  materialName: quotation?.detail?.materialName || '',
+  packagingType: quotation?.detail?.packagingType || '',
+  weight: quotation?.detail?.weight ?? quotation?.weightKg ?? 0,
+  unit: quotation?.detail?.unit || quotation?.weightUnit || 'MT',
+  articles: quotation?.detail?.articles?.length ? quotation.detail.articles : quotation?.materials?.map((m: any) => ({
+    numberOfArticle: m.numberOfArticle ?? 0,
+    length: m.length ?? 0,
+    width: m.width ?? 0,
+    height: m.height ?? 0,
+  })) || [],
+  loadType: quotation?.detail?.loadType === 'FTL' ? 'Full Load' : quotation?.detail?.loadType === 'PTL' ? 'Part Load' : 'Full Load',
+  fromAddresses: quotation?.detail?.fromAddresses?.length
+    ? quotation.detail.fromAddresses.map((value: string) => ({ value }))
+    : quotation?.addresses?.filter((a: any) => a.addressType === 'FROM').map((a: any) => ({ value: a.address })) || [{ value: '' }],
+  toAddresses: quotation?.detail?.toAddresses?.length
+    ? quotation.detail.toAddresses.map((value: string) => ({ value }))
+    : quotation?.addresses?.filter((a: any) => a.addressType === 'TO').map((a: any) => ({ value: a.address })) || [{ value: '' }],
+  loadingDate: quotation?.detail?.loadingDate || '',
+  tripType: quotation?.detail?.tripType === 'One Way' ? 'Oneway' : quotation?.detail?.tripType === 'Round Trip' ? 'Round' : 'Oneway',
+  vehicleType: quotation?.detail?.vehicleType || quotation?.vehicleType || '',
+  guaranteeWeight: quotation?.detail?.guaranteeWeight ?? quotation?.weightKg ?? 0,
+  guaranteeWeightUnit: quotation?.detail?.guaranteeWeightUnit || quotation?.vehicleWeightUnit || 'MT',
+  rate: quotation?.detail?.rate ?? quotation?.rate ?? 0,
+  rateType: quotation?.detail?.rateType === 'Per Ton' ? 'Per MT' : quotation?.detail?.rateType || 'Per MT',
+  oversize: quotation?.detail?.oversize ?? '0',
+  oversizeSide: quotation?.detail?.oversizeSide || undefined,
+  noOfVehicle: quotation?.detail?.noOfVehicle ?? 0,
+  freightAmount: quotation?.detail?.freightAmount ?? 0,
+  loadingCharge: quotation?.detail?.loadingCharge ?? 0,
+  unloadingCharge: quotation?.detail?.unloadingCharge ?? 0,
+  serviceCharge: quotation?.detail?.serviceCharge ?? 0,
+  odcCharge: quotation?.detail?.odcCharge ?? 0,
+  otherCharge: quotation?.detail?.otherCharge ?? 0,
+  tollTax: quotation?.detail?.tollTax ?? 0,
+  totalFreight: quotation?.detail?.totalFreight ?? quotation?.totalFreight ?? quotation?.total ?? 0,
+  gstPercent: (() => {
+    const value = Number(quotation?.detail?.gstPercent ?? quotation?.gstPercent ?? 5)
+    const allowed = ['5', '12', '18', '28'] as const
+    const gst = allowed.includes(String(value) as (typeof allowed)[number]) ? (String(value) as (typeof allowed)[number]) : '5'
+    return gst
+  })(),
+  freightAmountWithGst: quotation?.detail?.freightAmountWithGst ?? 0,
+  paidBy: quotation?.detail?.paidBy || 'Consignor',
+  requiredDriverCash: quotation?.detail?.requiredDriverCash ?? 0,
+  advanceType: quotation?.detail?.advanceType || '10%',
+  advanceAmount: quotation?.detail?.advanceAmount ?? 0,
+  paymentCycle: quotation?.detail?.paymentCycle || '7',
+  quotationValidUpto: quotation?.detail?.quotationValidUpto || quotation?.quotationValidUpto || validUptoIso(),
+  remarks: quotation?.detail?.remarks || '',
+  demurrageCharge: quotation?.detail?.demurrageCharge ?? 0,
+  demurrageChargeType: quotation?.detail?.demurrageChargeType || '1',
+  demurrageChargeApplicableAfter: quotation?.detail?.demurrageChargeApplicableAfter || '',
+  hideGeneratedDatetimeFromPdf: quotation?.detail?.hideGeneratedDatetimeFromPdf ?? false,
+  quotationId: quotation?.quotationId ?? 0,
+  tag: 'update',
+})
+
 export default function CreateQuotationPage() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
   const { toast } = useToast()
   const createQuotation = useCreateQuotation()
+  const updateQuotation = useUpdateQuotation()
+  const { data: existingQuotation, isLoading: isLoadingQuotation } = useQuotation(id ?? '')
   const [step, setStep] = React.useState(0)
+
+  const defaultValues: Partial<CreateQuotationFormValues> = {
+    quotationNo: 0,
+    quotationDate: todayIso(),
+    companyName: '',
+    companyContactNo: '',
+    companyGstNo: '',
+    companyAddress: '',
+    enquiryDate: '',
+    referenceDocumentId: '',
+    enquiryByPerson: '',
+    materialName: '',
+    packagingType: '',
+    unit: 'MT',
+    weight: 0,
+    articles: [],
+    loadType: 'Full Load',
+    fromAddresses: [{ value: '' }],
+    toAddresses: [{ value: '' }],
+    loadingDate: '',
+    tripType: 'Oneway',
+    vehicleType: '',
+    guaranteeWeight: 0,
+    guaranteeWeightUnit: 'MT',
+    rate: 0,
+    rateType: 'Per MT',
+    oversize: '0',
+    noOfVehicle: 0,
+    freightAmount: 0,
+    loadingCharge: 0,
+    unloadingCharge: 0,
+    serviceCharge: 0,
+    odcCharge: 0,
+    otherCharge: 0,
+    tollTax: 0,
+    totalFreight: 0,
+    gstPercent: '5',
+    freightAmountWithGst: 0,
+    paidBy: 'Consignor',
+    requiredDriverCash: 0,
+    advanceType: '10%',
+    advanceAmount: 0,
+    paymentCycle: '7',
+    quotationValidUpto: validUptoIso(),
+    remarks: '',
+    demurrageCharge: 0,
+    demurrageChargeType: '1',
+    demurrageChargeApplicableAfter: '',
+    hideGeneratedDatetimeFromPdf: false,
+    quotationId: 0,
+    tag: 'insert',
+  }
 
   const {
     register,
@@ -129,6 +251,7 @@ export default function CreateQuotationPage() {
     trigger,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<CreateQuotationFormValues>({
     // `any` cast: zod's `coerce.number()` input/output types intentionally
@@ -136,14 +259,24 @@ export default function CreateQuotationPage() {
     // (same convention as CreateBiltyPage).
     resolver: zodResolver(createQuotationSchema) as any,
     defaultValues: {
+      quotationNo: 0,
       quotationDate: todayIso(),
       companyName: '',
+      companyContactNo: '',
+      companyGstNo: '',
+      companyAddress: '',
+      enquiryDate: '',
+      referenceDocumentId: '',
+      enquiryByPerson: '',
+      materialName: '',
+      packagingType: '',
       unit: 'MT',
       weight: 0,
       articles: [],
       loadType: 'Full Load',
-      fromAddresses: [''],
-      toAddresses: [''],
+      fromAddresses: [{ value: '' }],
+      toAddresses: [{ value: '' }],
+      loadingDate: '',
       tripType: 'Oneway',
       vehicleType: '',
       guaranteeWeight: 0,
@@ -168,13 +301,27 @@ export default function CreateQuotationPage() {
       advanceAmount: 0,
       paymentCycle: '7',
       quotationValidUpto: validUptoIso(),
+      remarks: '',
       demurrageCharge: 0,
       demurrageChargeType: '1',
+      demurrageChargeApplicableAfter: '',
       hideGeneratedDatetimeFromPdf: false,
       quotationId: 0,
       tag: 'insert',
     },
   })
+
+  React.useEffect(() => {
+    if (id && existingQuotation) {
+      reset({
+        ...defaultValues,
+        ...mapQuotationToFormValues(existingQuotation),
+        tag: 'update',
+      })
+    } else if (!id) {
+      reset(defaultValues)
+    }
+  }, [id, existingQuotation, reset])
 
   const oversize = watch('oversize')
   const companyName = watch('companyName')
@@ -243,20 +390,50 @@ export default function CreateQuotationPage() {
 
   const onSubmit = async (values: CreateQuotationFormValues) => {
     const payload = mapQuotationFormToPayload(values)
-    await createQuotation.mutateAsync(payload)
-    toast({
-      title: 'Quotation created',
-      description: 'The transport quotation has been generated successfully.',
-      variant: 'success',
-    })
-    navigate('/quotation')
+
+    try {
+      if (id) {
+        await updateQuotation.mutateAsync({ id, payload })
+        toast({
+          title: 'Quotation updated',
+          description: 'The quotation has been updated successfully.',
+          variant: 'success',
+        })
+      } else {
+        await createQuotation.mutateAsync(payload)
+        toast({
+          title: 'Quotation created',
+          description: 'The transport quotation has been generated successfully.',
+          variant: 'success',
+        })
+      }
+      navigate('/quotation')
+    } catch (error) {
+      toast({
+        title: id ? 'Quotation update failed' : 'Quotation creation failed',
+        description: 'The backend could not save this quotation. Please check the API connection and try again.',
+        variant: 'error',
+      })
+      console.error(id ? 'Update quotation failed:' : 'Create quotation failed:', error)
+    }
+  }
+
+  if (id && isLoadingQuotation) {
+    return (
+      <div>
+        <PageHeader title="Edit Transport Quotation" />
+        <Card>
+          <CardContent className="p-6 text-sm text-[var(--color-muted-foreground)]">Loading quotation…</CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div>
       <PageHeader
-        title="Create Transport Quotation"
-        description="Fill in the details below to generate a new quotation."
+        title={id ? 'Edit Transport Quotation' : 'Create Transport Quotation'}
+        description={id ? 'Update the quotation details below.' : 'Fill in the details below to generate a new quotation.'}
       />
 
       <Card>
