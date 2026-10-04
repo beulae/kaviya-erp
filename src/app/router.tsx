@@ -20,6 +20,15 @@ import QuotationListPage from '@/features/quotation/pages/quotation-list-page'
 import CreateQuotationPage from '@/features/quotation/pages/create-quotation-page'
 import ViewQuotationPage from '@/features/quotation/pages/view-quotation-page'
 
+import LoadingSlipListPage from '@/features/loading-slip/pages/loading-slip-list-page'
+import CreateLoadingSlipPage from '@/features/loading-slip/pages/create-loading-slip-page'
+
+import PartyListPage from '@/features/party/pages/party-list-page'
+import CreatePartyPage from '@/features/party/pages/create-party-page'
+
+import TruckListPage from '@/features/truck/pages/truck-list-page'
+import CreateTruckPage from '@/features/truck/pages/create-truck-page'
+
 import CustomersPage from '@/features/customers/pages/customers-page'
 import DriversPage from '@/features/drivers/pages/drivers-page'
 import VehiclesPage from '@/features/vehicles/pages/vehicles-page'
@@ -64,8 +73,20 @@ export function AppRouter() {
           <Route path="/quotation/:id/view" element={<ViewQuotationPage />} />
           <Route path="/quotation/:id/edit" element={<CreateQuotationPage />} />
 
+          <Route path="/loading-slip" element={<LoadingSlipListPage />} />
+          <Route path="/loading-slip/create" element={<CreateLoadingSlipPage />} />
+          <Route path="/loading-slip/:id/edit" element={<CreateLoadingSlipPage />} />
+
           <Route path="/operations/loading-advice" element={<ComingSoonPage title="Loading Advice" />} />
           <Route path="/operations/dispatch" element={<ComingSoonPage title="Dispatch" />} />
+
+          <Route path="/masters/party" element={<PartyListPage />} />
+          <Route path="/masters/party/create" element={<CreatePartyPage />} />
+          <Route path="/masters/party/:id/edit" element={<CreatePartyPage />} />
+
+          <Route path="/masters/truck" element={<TruckListPage />} />
+          <Route path="/masters/truck/create" element={<CreateTruckPage />} />
+          <Route path="/masters/truck/:id/edit" element={<CreateTruckPage />} />
 
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/drivers" element={<DriversPage />} />
