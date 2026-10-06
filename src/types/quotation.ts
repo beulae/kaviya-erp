@@ -92,6 +92,7 @@ export interface Quotation {
   quotationGeneratedDate?: string
   customerName?: string
   companyName?: string
+  contactNumber?: string
   vehicleType?: string
   pickup?: string
   destination?: string

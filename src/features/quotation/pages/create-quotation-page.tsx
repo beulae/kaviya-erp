@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Loader2 } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -13,7 +14,7 @@ import { useToast } from '@/components/ui/toaster'
 import { formatCurrency } from '@/utils/format'
 
 import { createQuotationSchema, type CreateQuotationFormValues } from '../schemas/quotation-schema'
-import { useCreateQuotation, useQuotation, useUpdateQuotation } from '../api/use-quotation'
+import { useCreateQuotation, useQuotation, useQuotationNumber, useUpdateQuotation } from '../api/use-quotation'
 import { mapQuotationFormToPayload } from '../api/quotation-mapper'
 import {
   calculateFreight,
@@ -50,6 +51,8 @@ import {
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 const validUptoIso = () => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
+const dateInputValue = (value: unknown, fallback = '') => (typeof value === 'string' ? value.slice(0, 10) : fallback)
+const MIN_SAVE_INDICATOR_MS = 400
 
 const STEPS = [
   {
@@ -117,13 +120,13 @@ const STEPS = [
 ] as const
 
 const mapQuotationToFormValues = (quotation: any): Partial<CreateQuotationFormValues> => ({
-  quotationNo: Number(quotation?.quotationNumber?.match(/\d+/)?.[0] ?? quotation?.detail?.quotationNo ?? 0),
-  quotationDate: quotation?.quotationGeneratedDate || quotation?.date || todayIso(),
+  quotationNo: String(quotation?.quotationNumber ?? quotation?.detail?.quotationNo ?? ''),
+  quotationDate: dateInputValue(quotation?.quotationGeneratedDate || quotation?.date, todayIso()),
   companyName: quotation?.companyName || quotation?.detail?.companyName || '',
   companyContactNo: quotation?.detail?.companyContactNo || quotation?.contactNumber || '',
   companyGstNo: quotation?.detail?.companyGstNo || quotation?.gstNumber || '',
   companyAddress: quotation?.detail?.companyAddress || quotation?.companyAddress || '',
-  enquiryDate: quotation?.detail?.enquiryDate || '',
+  enquiryDate: dateInputValue(quotation?.detail?.enquiryDate),
   referenceDocumentId: quotation?.detail?.referenceDocumentId || '',
   enquiryByPerson: quotation?.detail?.enquiryByPerson || '',
   materialName: quotation?.detail?.materialName || '',
@@ -143,7 +146,7 @@ const mapQuotationToFormValues = (quotation: any): Partial<CreateQuotationFormVa
   toAddresses: quotation?.detail?.toAddresses?.length
     ? quotation.detail.toAddresses.map((value: string) => ({ value }))
     : quotation?.addresses?.filter((a: any) => a.addressType === 'TO').map((a: any) => ({ value: a.address })) || [{ value: '' }],
-  loadingDate: quotation?.detail?.loadingDate || '',
+  loadingDate: dateInputValue(quotation?.detail?.loadingDate),
   tripType: quotation?.detail?.tripType === 'One Way' ? 'Oneway' : quotation?.detail?.tripType === 'Round Trip' ? 'Round' : 'Oneway',
   vehicleType: quotation?.detail?.vehicleType || quotation?.vehicleType || '',
   guaranteeWeight: quotation?.detail?.guaranteeWeight ?? quotation?.weightKg ?? 0,
@@ -173,11 +176,14 @@ const mapQuotationToFormValues = (quotation: any): Partial<CreateQuotationFormVa
   advanceType: quotation?.detail?.advanceType || '10%',
   advanceAmount: quotation?.detail?.advanceAmount ?? 0,
   paymentCycle: quotation?.detail?.paymentCycle || '7',
-  quotationValidUpto: quotation?.detail?.quotationValidUpto || quotation?.quotationValidUpto || validUptoIso(),
+  quotationValidUpto: dateInputValue(
+    quotation?.detail?.quotationValidUpto || quotation?.quotationValidUpto,
+    validUptoIso(),
+  ),
   remarks: quotation?.detail?.remarks || '',
-  demurrageCharge: quotation?.detail?.demurrageCharge ?? 0,
-  demurrageChargeType: quotation?.detail?.demurrageChargeType || '1',
-  demurrageChargeApplicableAfter: quotation?.detail?.demurrageChargeApplicableAfter || '',
+  demurrageCharge: Number(quotation?.detail?.demurrageCharge ?? 0),
+  demurrageChargeType: String(quotation?.detail?.demurrageChargeType) === '2' ? '2' : '1',
+  demurrageChargeApplicableAfter: String(quotation?.detail?.demurrageChargeApplicableAfter ?? ''),
   hideGeneratedDatetimeFromPdf: quotation?.detail?.hideGeneratedDatetimeFromPdf ?? false,
   quotationId: quotation?.quotationId ?? 0,
   tag: 'update',
@@ -189,77 +195,14 @@ export default function CreateQuotationPage() {
   const { toast } = useToast()
   const createQuotation = useCreateQuotation()
   const updateQuotation = useUpdateQuotation()
+  const { data: quotationNumber } = useQuotationNumber(!id)
   const { data: existingQuotation, isLoading: isLoadingQuotation } = useQuotation(id ?? '')
   const [step, setStep] = React.useState(0)
+  const [isSaving, setIsSaving] = React.useState(false)
 
-  const defaultValues: Partial<CreateQuotationFormValues> = {
-    quotationNo: 0,
-    quotationDate: todayIso(),
-    companyName: '',
-    companyContactNo: '',
-    companyGstNo: '',
-    companyAddress: '',
-    enquiryDate: '',
-    referenceDocumentId: '',
-    enquiryByPerson: '',
-    materialName: '',
-    packagingType: '',
-    unit: 'MT',
-    weight: 0,
-    articles: [],
-    loadType: 'Full Load',
-    fromAddresses: [{ value: '' }],
-    toAddresses: [{ value: '' }],
-    loadingDate: '',
-    tripType: 'Oneway',
-    vehicleType: '',
-    guaranteeWeight: 0,
-    guaranteeWeightUnit: 'MT',
-    rate: 0,
-    rateType: 'Per MT',
-    oversize: '0',
-    noOfVehicle: 0,
-    freightAmount: 0,
-    loadingCharge: 0,
-    unloadingCharge: 0,
-    serviceCharge: 0,
-    odcCharge: 0,
-    otherCharge: 0,
-    tollTax: 0,
-    totalFreight: 0,
-    gstPercent: '5',
-    freightAmountWithGst: 0,
-    paidBy: 'Consignor',
-    requiredDriverCash: 0,
-    advanceType: '10%',
-    advanceAmount: 0,
-    paymentCycle: '7',
-    quotationValidUpto: validUptoIso(),
-    remarks: '',
-    demurrageCharge: 0,
-    demurrageChargeType: '1',
-    demurrageChargeApplicableAfter: '',
-    hideGeneratedDatetimeFromPdf: false,
-    quotationId: 0,
-    tag: 'insert',
-  }
-
-  const {
-    register,
-    control,
-    handleSubmit,
-    trigger,
-    watch,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<CreateQuotationFormValues>({
-    // `any` cast: zod's `coerce.number()` input/output types intentionally
-    // diverge, which trips the strict Resolver generic — safe in practice
-    // (same convention as CreateBiltyPage).
-    resolver: zodResolver(createQuotationSchema) as any,
-    defaultValues: {
-      quotationNo: 0,
+  const defaultValues = React.useMemo<Partial<CreateQuotationFormValues>>(
+    () => ({
+      quotationNo: 'QT000',
       quotationDate: todayIso(),
       companyName: '',
       companyContactNo: '',
@@ -272,19 +215,19 @@ export default function CreateQuotationPage() {
       packagingType: '',
       unit: 'MT',
       weight: 0,
-      articles: [],
+      articles: [{ numberOfArticle: 0, length: 0, width: 0, height: 0 }],
       loadType: 'Full Load',
-      fromAddresses: [{ value: '' }],
-      toAddresses: [{ value: '' }],
+      fromAddresses: [{ value: 'Chennai, Tamil Nadu' }],
+      toAddresses: [{ value: 'Bengaluru, Karnataka' }],
       loadingDate: '',
       tripType: 'Oneway',
-      vehicleType: '',
+      vehicleType: VEHICLE_TYPES[0]?.value ?? '',
       guaranteeWeight: 0,
       guaranteeWeightUnit: 'MT',
       rate: 0,
       rateType: 'Per MT',
       oversize: '0',
-      noOfVehicle: 0,
+      noOfVehicle: 1,
       freightAmount: 0,
       loadingCharge: 0,
       unloadingCharge: 0,
@@ -308,7 +251,23 @@ export default function CreateQuotationPage() {
       hideGeneratedDatetimeFromPdf: false,
       quotationId: 0,
       tag: 'insert',
-    },
+    }),
+    [],
+  )
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    trigger,
+    getFieldState,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<CreateQuotationFormValues>({
+    resolver: zodResolver(createQuotationSchema) as any,
+    defaultValues,
   })
 
   React.useEffect(() => {
@@ -321,7 +280,13 @@ export default function CreateQuotationPage() {
     } else if (!id) {
       reset(defaultValues)
     }
-  }, [id, existingQuotation, reset])
+  }, [id, existingQuotation, reset, defaultValues])
+
+  React.useEffect(() => {
+    if (!id && quotationNumber !== undefined && !getFieldState('quotationNo').isDirty) {
+      setValue('quotationNo', `QT${String(quotationNumber).padStart(3, '0')}`)
+    }
+  }, [id, quotationNumber, getFieldState, setValue])
 
   const oversize = watch('oversize')
   const companyName = watch('companyName')
@@ -390,24 +355,17 @@ export default function CreateQuotationPage() {
 
   const onSubmit = async (values: CreateQuotationFormValues) => {
     const payload = mapQuotationFormToPayload(values)
+    const saveStartedAt = Date.now()
+    let saved = false
+    setIsSaving(true)
 
     try {
       if (id) {
         await updateQuotation.mutateAsync({ id, payload })
-        toast({
-          title: 'Quotation updated',
-          description: 'The quotation has been updated successfully.',
-          variant: 'success',
-        })
       } else {
         await createQuotation.mutateAsync(payload)
-        toast({
-          title: 'Quotation created',
-          description: 'The transport quotation has been generated successfully.',
-          variant: 'success',
-        })
       }
-      navigate('/quotation')
+      saved = true
     } catch (error) {
       toast({
         title: id ? 'Quotation update failed' : 'Quotation creation failed',
@@ -415,6 +373,23 @@ export default function CreateQuotationPage() {
         variant: 'error',
       })
       console.error(id ? 'Update quotation failed:' : 'Create quotation failed:', error)
+    } finally {
+      const remaining = MIN_SAVE_INDICATOR_MS - (Date.now() - saveStartedAt)
+      if (remaining > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, remaining))
+      }
+      setIsSaving(false)
+    }
+
+    if (saved) {
+      toast({
+        title: id ? 'Quotation updated' : 'Quotation created',
+        description: id
+          ? 'The quotation has been updated successfully.'
+          : 'The transport quotation has been generated successfully.',
+        variant: 'success',
+      })
+      navigate('/quotation')
     }
   }
 
@@ -431,6 +406,17 @@ export default function CreateQuotationPage() {
 
   return (
     <div>
+      {isSaving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-background)]/60 backdrop-blur-sm">
+          <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-lg">
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--color-primary)]" />
+            <span className="text-sm font-medium text-[var(--color-foreground)]">
+              {id ? 'Updating quotation...' : 'Saving quotation...'}
+            </span>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title={id ? 'Edit Transport Quotation' : 'Create Transport Quotation'}
         description={id ? 'Update the quotation details below.' : 'Fill in the details below to generate a new quotation.'}
@@ -440,7 +426,7 @@ export default function CreateQuotationPage() {
         <QuotationStepper steps={STEPS} activeStep={step} onStepClick={setStep} />
 
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <form onSubmit={(event) => event.preventDefault()} noValidate>
             {step === 0 && (
               <div className="space-y-6">
                 <div>
@@ -449,9 +435,7 @@ export default function CreateQuotationPage() {
                     <Field label="Quotation Number" htmlFor="quotationNo" error={errors.quotationNo?.message} required>
                       <Input
                         id="quotationNo"
-                        type="number"
-                        min={0}
-                        placeholder="Enter Quotation Number"
+                        type="text"
                         {...register('quotationNo')}
                       />
                     </Field>
@@ -817,16 +801,27 @@ export default function CreateQuotationPage() {
             )}
 
             <div className="mt-6 flex justify-between border-t border-[var(--color-border)] pt-4">
-              <Button type="button" variant="outline" onClick={() => (step === 0 ? navigate('/quotation') : goBack())}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => (step === 0 ? navigate('/quotation') : goBack())}
+                disabled={isSaving}
+              >
                 {step === 0 ? 'Cancel' : 'Back'}
               </Button>
               {step < STEPS.length - 1 ? (
-                <Button type="button" onClick={goNext}>
+                <Button type="button" onClick={goNext} disabled={isSaving}>
                   Next
                 </Button>
               ) : (
-                <Button type="submit" loading={createQuotation.isPending}>
-                  Generate Quotation
+                <Button
+                  id="generateQuotation"
+                  type="button"
+                  loading={isSaving}
+                  disabled={isSaving}
+                  onClick={handleSubmit(onSubmit)}
+                >
+                  {id ? 'Update Quotation' : 'Generate Quotation'}
                 </Button>
               )}
             </div>
