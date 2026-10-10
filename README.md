@@ -52,7 +52,7 @@ src/
   constants/      Navigation config, etc.
 ```
 
-## Connecting a real backend
+## Connecting a real backend 
 
 The service layer (`src/features/*/api/*-service.ts`) currently simulates network
 latency against in-memory mock data so every screen works standalone. Each function's
