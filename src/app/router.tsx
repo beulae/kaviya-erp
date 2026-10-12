@@ -18,12 +18,13 @@ import EditBiltyPage from '@/features/bilty/pages/edit-bilty-page'
 
 import QuotationListPage from '@/features/quotation/pages/quotation-list-page'
 import CreateQuotationPage from '@/features/quotation/pages/create-quotation-page'
+import ViewQuotationPage from '@/features/quotation/pages/view-quotation-page'
 
 import CustomersPage from '@/features/customers/pages/customers-page'
 import DriversPage from '@/features/drivers/pages/drivers-page'
 import VehiclesPage from '@/features/vehicles/pages/vehicles-page'
 
-import ProfilePage from '@/features/profile/pages/profile-page'
+import EditProfilePage from '@/features/profile/pages/edit-profile-page'
 import SettingsPage from '@/features/settings/pages/settings-page'
 
 import { ComingSoonPage } from '@/components/common/coming-soon'
@@ -59,6 +60,8 @@ export function AppRouter() {
 
           <Route path="/quotation" element={<QuotationListPage />} />
           <Route path="/quotation/create" element={<CreateQuotationPage />} />
+          <Route path="/quotation/:id/view" element={<ViewQuotationPage />} />
+          <Route path="/quotation/:id/edit" element={<CreateQuotationPage />} />
 
           <Route path="/operations/loading-advice" element={<ComingSoonPage title="Loading Advice" />} />
           <Route path="/operations/dispatch" element={<ComingSoonPage title="Dispatch" />} />
@@ -78,7 +81,8 @@ export function AppRouter() {
             element={<ComingSoonPage title="Reports" description="Operational and financial reports." />}
           />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<EditProfilePage />} />
+          <Route path="/profile/transporter" element={<Navigate to="/profile" replace />} />
         </Route>
       </Route>
 
