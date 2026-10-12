@@ -36,12 +36,21 @@ export function ProfileLogoUpload({
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
     onFileChange(selected)
+    e.target.value = ''
+  }
+
+  const handleRemove = () => {
+    if (file) {
+      onFileChange(undefined)
+      return
+    }
+    onDelete()
   }
 
   return (
     <div>
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <div className="flex h-24 w-40 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-surface-muted)] shadow-sm">
           {previewUrl ? (
             <img src={previewUrl} alt="Company logo" className="h-full w-full object-contain" />
           ) : (
@@ -49,8 +58,9 @@ export function ProfileLogoUpload({
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
+        <p className="text-xs font-medium text-[var(--color-foreground)]">Logo</p>
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <input
               ref={inputRef}
               id="logoFile"
@@ -63,13 +73,13 @@ export function ProfileLogoUpload({
               <Upload className="h-4 w-4" /> {previewUrl ? 'Replace Logo' : 'Upload Logo'}
             </Button>
             {previewUrl && (
-              <Button type="button" variant="outline" size="sm" onClick={onDelete} loading={isDeleting}>
+              <Button type="button" variant="danger" size="sm" onClick={handleRemove} loading={!file && isDeleting}>
                 <Trash2 className="h-4 w-4" /> Delete Logo
               </Button>
             )}
           </div>
-          <p className="text-xs text-[var(--color-muted-foreground)]">PNG, JPG or WEBP, up to 2 MB.</p>
-          {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
+          <p className="text-center text-xs text-[var(--color-muted-foreground)]">PNG, JPG or WEBP, up to 2 MB.</p>
+          {error && <p className="text-center text-xs text-[var(--color-danger)]">{error}</p>}
         </div>
       </div>
     </div>

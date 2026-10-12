@@ -80,14 +80,23 @@ apiClient.interceptors.response.use(
 
 export interface ApiErrorShape {
   message: string
+  error?: string
   errors?: Record<string, string[]>
+  details?: string[]
 }
 
 /** Normalizes an unknown thrown error into a user-facing message. */
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiErrorShape | undefined
-    return data?.message || error.message || 'Something went wrong. Please try again.'
+    return (
+      data?.message ||
+      data?.error ||
+      data?.details?.join(', ') ||
+      (data?.errors ? Object.values(data.errors).flat().join(', ') : undefined) ||
+      error.message ||
+      'Something went wrong. Please try again.'
+    )
   }
   return 'Something went wrong. Please try again.'
 }

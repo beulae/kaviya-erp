@@ -1,5 +1,5 @@
-import type { MultiSelectOption } from '@/components/ui/multi-select'
 import type { SelectOption } from '@/components/ui/select'
+import type { MultiSelectOption } from '@/components/ui/multi-select'
 
 const opts = (values: string[]): SelectOption[] => values.map((v) => ({ label: v, value: v }))
 
@@ -28,14 +28,35 @@ export const STATE_OPTIONS: SelectOption[] = opts([
   'Kerala',
   'Maharashtra',
   'Gujarat',
-  'Delhi',
-  'West Bengal',
+  'Goa',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Madhya Pradesh',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
   'Punjab',
   'Rajasthan',
+  'Sikkim',
+  'Tripura',
   'Uttar Pradesh',
-  'Madhya Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+  'Chhattisgarh',
+  'Assam',
+  'Arunachal Pradesh',
   'Bihar',
-  'Odisha',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Puducherry',
+  'Chandigarh',
+  'Andaman and Nicobar Islands',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Lakshadweep',
 ])
 
 export const OFFICE_BRANCH_OPTIONS: SelectOption[] = opts([

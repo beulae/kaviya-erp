@@ -24,7 +24,6 @@ import CustomersPage from '@/features/customers/pages/customers-page'
 import DriversPage from '@/features/drivers/pages/drivers-page'
 import VehiclesPage from '@/features/vehicles/pages/vehicles-page'
 
-import ProfilePage from '@/features/profile/pages/profile-page'
 import EditProfilePage from '@/features/profile/pages/edit-profile-page'
 import SettingsPage from '@/features/settings/pages/settings-page'
 
@@ -82,8 +81,8 @@ export function AppRouter() {
             element={<ComingSoonPage title="Reports" description="Operational and financial reports." />}
           />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/transporter" element={<EditProfilePage />} />
+          <Route path="/profile" element={<EditProfilePage />} />
+          <Route path="/profile/transporter" element={<Navigate to="/profile" replace />} />
         </Route>
       </Route>
 

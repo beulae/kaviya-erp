@@ -1,6 +1,17 @@
 export type RiskType = 'owner' | 'carrier'
 export type UserType = 'fleetOwner' | 'broker'
 export type SignatureMethod = 'pad' | 'upload'
+export type TransporterDocumentType = 'LOGO' | 'SIGNATURE' | 'PAN' | 'GST' | 'OTHER'
+export type TransporterUploadType = 'PAD' | 'UPLOAD'
+
+export interface TransporterDocument {
+  id?: string
+  documentType?: TransporterDocumentType
+  uploadType?: TransporterUploadType
+  fileName?: string
+  filePath: string
+  mimeType?: string
+}
 
 export interface TransporterProfile {
   id: string
@@ -38,4 +49,5 @@ export interface TransporterProfile {
   signatureUrl?: string
 
   updatedAt: string
+  documents?: TransporterDocument[]
 }
