@@ -16,6 +16,7 @@ import {
   BarChart3,
   Settings,
 } from 'lucide-react'
+import { MASTER_LIST_ITEMS } from '@/constants/master-list-items'
 
 export interface NavChild {
   label: string
@@ -44,13 +45,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Masters',
     icon: Warehouse,
-    children: [
-      { label: 'Customers', to: '/customers' },
-      { label: 'Drivers', to: '/drivers' },
-      { label: 'Vehicles', to: '/vehicles' },
-      { label: 'Branches', to: '/masters/branches' },
-      { label: 'Routes', to: '/masters/routes' },
-    ],
+    children: [...MASTER_LIST_ITEMS],
   },
   {
     label: 'Accounts',
