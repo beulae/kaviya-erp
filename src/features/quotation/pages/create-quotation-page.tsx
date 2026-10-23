@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
+import { apiClient, getApiErrorMessage } from '@/api/axios-instance'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
@@ -44,7 +45,6 @@ import {
   PAYMENT_CYCLE_OPTIONS,
   DEMURRAGE_CHARGE_TYPE_OPTIONS,
   DEMURRAGE_APPLICABLE_AFTER_OPTIONS,
-  COMPANY_NAME_SUGGESTIONS,
   MAX_FROM_ADDRESSES,
   MAX_TO_ADDRESSES,
 } from '../constants/options'
@@ -199,6 +199,38 @@ export default function CreateQuotationPage() {
   const { data: existingQuotation, isLoading: isLoadingQuotation } = useQuotation(id ?? '')
   const [step, setStep] = React.useState(0)
   const [isSaving, setIsSaving] = React.useState(false)
+  const [companyNameSuggestions, setCompanyNameSuggestions] = React.useState<string[]>([])
+
+  React.useEffect(() => {
+    let active = true
+
+    const loadParties = async () => {
+      try {
+        const { data } = await apiClient.get('/parties')
+        if (!Array.isArray(data?.data)) {
+          throw new Error('The server returned an invalid party list.')
+        }
+
+        const names = data.data
+          .map((party: { partyName?: string | null }) => party.partyName?.trim() ?? '')
+          .filter((name: string) => name.length > 0)
+        if (active) setCompanyNameSuggestions(names)
+      } catch (error) {
+        if (active) {
+          toast({
+            title: 'Unable to load parties',
+            description: getApiErrorMessage(error),
+            variant: 'error',
+          })
+        }
+      }
+    }
+
+    void loadParties()
+    return () => {
+      active = false
+    }
+  }, [toast])
 
   const defaultValues = React.useMemo<Partial<CreateQuotationFormValues>>(
     () => ({
@@ -459,7 +491,7 @@ export default function CreateQuotationPage() {
                         placeholder="Enter Company Name"
                         value={companyName ?? ''}
                         onValueChange={(v) => setValue('companyName', v, { shouldValidate: true, shouldDirty: true })}
-                        suggestions={COMPANY_NAME_SUGGESTIONS}
+                        suggestions={companyNameSuggestions}
                       />
                     </Field>
                     <Field
