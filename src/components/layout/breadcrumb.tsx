@@ -8,6 +8,8 @@ function titleCase(segment: string) {
 export function Breadcrumb() {
   const location = useLocation()
   const segments = location.pathname.split('/').filter(Boolean)
+  const isQuotationRecordRoute =
+    segments[0] === 'quotation' && segments.length === 3 && ['edit', 'view'].includes(segments[2])
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-[var(--color-muted-foreground)]">
@@ -15,6 +17,8 @@ export function Breadcrumb() {
         <Home className="h-3.5 w-3.5" />
       </Link>
       {segments.map((seg, i) => {
+        if (isQuotationRecordRoute && i === 1) return null
+
         const path = '/' + segments.slice(0, i + 1).join('/')
         const isLast = i === segments.length - 1
         return (

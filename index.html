@@ -6,6 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kaviya Roadways ERP</title>
     <meta name="description" content="Kaviya Roadways and Logistics Services — transporter operations dashboard" />
+    <script>
+      // Apply the saved theme before React mounts, to avoid a flash of the
+      // wrong theme on load. Keep this in sync with src/app/theme-provider.tsx.
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('kaviya-theme')
+          var resolved =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.classList.toggle('dark', resolved === 'dark')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

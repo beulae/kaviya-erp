@@ -84,7 +84,7 @@ export function Topbar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
             <ChevronDown className="hidden h-4 w-4 text-white/60 sm:block" />
           </button>
           {profileOpen && (
-            <div className="absolute right-0 mt-2 w-52 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-xl">
+            <div className="absolute right-0 mt-2 w-52 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 text-[var(--color-foreground)] shadow-xl">
               <button
                 onClick={() => {
                   setProfileOpen(false)

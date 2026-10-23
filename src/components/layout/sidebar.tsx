@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, X } from 'lucide-react'
 import { NAV_ITEMS } from '@/constants/nav'
 import { cn } from '@/utils/cn'
@@ -10,8 +10,26 @@ interface SidebarProps {
   onCloseMobile: () => void
 }
 
+function getPathRoot(pathname: string) {
+  return `/${pathname.split('/').filter(Boolean)[0] ?? ''}`
+}
+
 export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
-  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({ Operations: true })
+  const location = useLocation()
+  const pathnameRoot = getPathRoot(location.pathname)
+  const activeGroup = NAV_ITEMS.find((item) =>
+    item.children?.some((child) => getPathRoot(child.to) === pathnameRoot),
+  )?.label
+  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(() => ({
+    Operations: true,
+    ...(activeGroup ? { [activeGroup]: true } : {}),
+  }))
+
+  React.useEffect(() => {
+    if (activeGroup) {
+      setOpenGroups((prev) => ({ ...prev, [activeGroup]: true }))
+    }
+  }, [activeGroup, location.pathname])
 
   const toggleGroup = (label: string) => setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
 
@@ -48,10 +66,11 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
                 </li>
               )
             }
-            const isOpen = openGroups[item.label]
+            const isOpen = openGroups[item.label] ?? false
             return (
               <li key={item.label}>
                 <button
+                  type="button"
                   onClick={() => toggleGroup(item.label)}
                   className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-[var(--color-foreground)] hover:bg-[var(--color-surface-muted)]"
                   aria-expanded={isOpen}
