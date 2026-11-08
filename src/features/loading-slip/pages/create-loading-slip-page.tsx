@@ -17,6 +17,7 @@ import { loadingSlipSchema, SPECIAL_CHAR_HINT, type LoadingSlipFormValues } from
 import { useCreateLoadingSlip, useLoadingSlip, useUpdateLoadingSlip } from '../api/use-loading-slip'
 import { mapLoadingSlipFormToPayload, mapLoadingSlipToFormValues } from '../api/loading-slip-mapper'
 import { calculateLoadingSlipTotals } from '../utils/loading-slip-calculations'
+import { QuotationStepper } from '@/features/quotation/components/quotation-stepper'
 import { VEHICLE_TYPES, WEIGHT_UNITS, getCurrentFinancialYear, getFinancialYearOptions } from '../constants/options'
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
@@ -29,7 +30,7 @@ const DEFAULT_VALUES: LoadingSlipFormValues = {
   branchCode: '',
   financialYear: getCurrentFinancialYear(),
   partyName: '',
-  partyContactNo: '',
+  partyContactNumber: '',
   partyGstin: '',
   partyEmail: '',
   bankName: '',
@@ -43,8 +44,8 @@ const DEFAULT_VALUES: LoadingSlipFormValues = {
   openingKm: 0,
   closingKm: 0,
   driverName: '',
-  driverNumber: '',
-  dlNumber: '',
+  driverMobileNumber: '',
+  driverDlNumber: '',
   vehicleOwnerName: '',
   vehicleOwnerMobile: '',
   vehicleOwnerPan: '',
@@ -67,6 +68,73 @@ const DEFAULT_VALUES: LoadingSlipFormValues = {
   hideSupplierDetailsFromPdf: false,
   hideGeneratedDatetimeFromPdf: false,
 }
+
+const STEPS = [
+  {
+    key: 'party',
+    label: 'Party Details',
+    fields: [
+      'loadingSlipNo',
+      'billGenerateDate',
+      'branchCode',
+      'financialYear',
+      'partyName',
+      'partyContactNumber',
+      'partyGstin',
+      'partyEmail',
+      'bankName',
+      'partyAddress',
+    ],
+  },
+  {
+    key: 'truck',
+    label: 'Truck Details',
+    fields: [
+      'vehicleState',
+      'vehicleDistrict',
+      'vehicleSeries',
+      'vehicleDigits',
+      'vehicleType',
+      'vehicleSize',
+      'openingKm',
+      'closingKm',
+      'driverName',
+      'driverMobileNumber',
+      'driverDlNumber',
+      'vehicleOwnerName',
+      'vehicleOwnerMobile',
+      'vehicleOwnerPan',
+      'vehicleOwnerAddress',
+    ],
+  },
+  { key: 'material', label: 'Material Details', fields: ['fromLocation', 'toLocation', 'materialDetails'] },
+  {
+    key: 'freight',
+    label: 'Freight Details',
+    fields: [
+      'actualWeight',
+      'guaranteeWeight',
+      'unit',
+      'rate',
+      'isRateFixed',
+      'haltingCharge',
+      'otherCharges',
+      'advanceAmount',
+    ],
+  },
+  {
+    key: 'hiring',
+    label: 'Truck Hiring & Remarks',
+    fields: [
+      'truckHireRate',
+      'isTruckHireRateFixed',
+      'commissionAmount',
+      'remarks',
+      'hideSupplierDetailsFromPdf',
+      'hideGeneratedDatetimeFromPdf',
+    ],
+  },
+] as const satisfies readonly { key: string; label: string; fields: readonly (keyof LoadingSlipFormValues)[] }[]
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -105,11 +173,13 @@ export default function CreateLoadingSlipPage() {
   const createLoadingSlip = useCreateLoadingSlip()
   const updateLoadingSlip = useUpdateLoadingSlip()
   const { data: existingSlip } = useLoadingSlip(id ?? '')
+  const [step, setStep] = React.useState(0)
 
   const {
     register,
     control,
     handleSubmit,
+    trigger,
     reset,
     formState: { errors },
   } = useForm<LoadingSlipFormValues>({
@@ -172,6 +242,21 @@ export default function CreateLoadingSlipPage() {
     errors.vehicleSeries?.message ||
     errors.vehicleDigits?.message
 
+  const isLastStep = step === STEPS.length - 1
+
+  const goNext = async () => {
+    const valid = await trigger([...STEPS[step].fields])
+    if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1))
+  }
+  const goBack = () => setStep((s) => Math.max(s - 1, 0))
+
+  // Tabs can be clicked freely, so a submit may fail on a field in an earlier
+  // tab — jump to the first tab that has an error so the user can see it.
+  const onInvalid = (formErrors: Partial<Record<keyof LoadingSlipFormValues, unknown>>) => {
+    const firstInvalid = STEPS.findIndex((s) => s.fields.some((f) => f in formErrors))
+    if (firstInvalid !== -1) setStep(firstInvalid)
+  }
+
   const onSubmit = async (values: LoadingSlipFormValues) => {
     const payload = mapLoadingSlipFormToPayload(values)
     try {
@@ -200,389 +285,450 @@ export default function CreateLoadingSlipPage() {
       />
 
       <Card>
+        <QuotationStepper steps={STEPS} activeStep={step} onStepClick={setStep} />
+
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Loading Slip No" htmlFor="loadingSlipNo" error={errors.loadingSlipNo?.message} required>
-                <Input id="loadingSlipNo" placeholder="Loading Slip No" {...register('loadingSlipNo')} />
-              </Field>
-              <Field
-                label="Bill Generate Date"
-                htmlFor="billGenerateDate"
-                error={errors.billGenerateDate?.message}
-                required
-              >
-                <Input id="billGenerateDate" type="date" {...register('billGenerateDate')} />
-              </Field>
-              <Field label="Branch Code" htmlFor="branchCode" error={errors.branchCode?.message}>
-                <Input id="branchCode" placeholder="Branch Code" {...register('branchCode')} />
-              </Field>
-              <Field label="Financial Year" htmlFor="financialYear" error={errors.financialYear?.message}>
-                <Select
-                  id="financialYear"
-                  placeholder="Select Financial Year"
-                  options={FINANCIAL_YEARS}
-                  {...register('financialYear')}
-                />
-              </Field>
-            </div>
-
-            <Section title="Party Details">
-              <Field label="Party Name" htmlFor="partyName" className="sm:col-span-6" error={errors.partyName?.message}>
-                <Input id="partyName" placeholder="Party Name" {...register('partyName')} />
-              </Field>
-              <Field
-                label="Contact Number"
-                htmlFor="partyContactNo"
-                className="sm:col-span-3"
-                error={errors.partyContactNo?.message}
-              >
-                <Input
-                  id="partyContactNo"
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Contact Number"
-                  {...register('partyContactNo')}
-                />
-              </Field>
-              <Field label="GSTIN" htmlFor="partyGstin" className="sm:col-span-3" error={errors.partyGstin?.message}>
-                <Input
-                  id="partyGstin"
-                  maxLength={15}
-                  placeholder="GSTIN"
-                  className="uppercase"
-                  {...register('partyGstin', { setValueAs: toUpper })}
-                />
-              </Field>
-              <Field label="Email" htmlFor="partyEmail" className="sm:col-span-6" error={errors.partyEmail?.message}>
-                <Input id="partyEmail" type="email" placeholder="Email" {...register('partyEmail')} />
-              </Field>
-              <Field label="Bank Name" htmlFor="bankName" className="sm:col-span-6" error={errors.bankName?.message}>
-                <Input id="bankName" placeholder="Bank Name" {...register('bankName')} />
-              </Field>
-              <Field
-                label="Address"
-                htmlFor="partyAddress"
-                className="sm:col-span-6"
-                error={errors.partyAddress?.message}
-                hint={SPECIAL_CHAR_HINT}
-              >
-                <Textarea id="partyAddress" rows={2} placeholder="Address" {...register('partyAddress')} />
-              </Field>
-            </Section>
-
-            <Section title="Truck Details">
-              <Field
-                label="Vehicle Number"
-                htmlFor="vehicleState"
-                className="sm:col-span-6 lg:col-span-9"
-                error={vehicleNumberError}
-                required
-              >
-                <div className="grid grid-cols-4 gap-2 sm:gap-4 lg:grid-cols-12">
-                  <Input
-                    id="vehicleState"
-                    aria-label="State code"
-                    placeholder="TN"
-                    maxLength={2}
-                    className="uppercase lg:col-span-2"
-                    error={!!errors.vehicleState}
-                    {...register('vehicleState', { setValueAs: toUpper })}
-                  />
-                  <Input
-                    aria-label="District code"
-                    placeholder="12"
-                    inputMode="numeric"
-                    maxLength={2}
-                    className="lg:col-span-2"
-                    error={!!errors.vehicleDistrict}
-                    {...register('vehicleDistrict')}
-                  />
-                  <Input
-                    aria-label="Series"
-                    placeholder="BM"
-                    maxLength={3}
-                    className="uppercase lg:col-span-2"
-                    error={!!errors.vehicleSeries}
-                    {...register('vehicleSeries', { setValueAs: toUpper })}
-                  />
-                  <Input
-                    aria-label="Number"
-                    placeholder="1848"
-                    inputMode="numeric"
-                    maxLength={4}
-                    className="lg:col-span-6"
-                    error={!!errors.vehicleDigits}
-                    {...register('vehicleDigits')}
-                  />
+          <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
+            {step === 0 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <Field label="Loading Slip No" htmlFor="loadingSlipNo" error={errors.loadingSlipNo?.message} required>
+                    <Input id="loadingSlipNo" placeholder="Loading Slip No" {...register('loadingSlipNo')} />
+                  </Field>
+                  <Field
+                    label="Bill Generate Date"
+                    htmlFor="billGenerateDate"
+                    error={errors.billGenerateDate?.message}
+                    required
+                  >
+                    <Input id="billGenerateDate" type="date" {...register('billGenerateDate')} />
+                  </Field>
+                  <Field label="Branch Code" htmlFor="branchCode" error={errors.branchCode?.message}>
+                    <Input id="branchCode" placeholder="Branch Code" {...register('branchCode')} />
+                  </Field>
+                  <Field label="Financial Year" htmlFor="financialYear" error={errors.financialYear?.message}>
+                    <Select
+                      id="financialYear"
+                      placeholder="Select Financial Year"
+                      options={FINANCIAL_YEARS}
+                      {...register('financialYear')}
+                    />
+                  </Field>
                 </div>
-              </Field>
-              <Field
-                label="Vehicle Type"
-                htmlFor="vehicleType"
-                className="sm:col-span-6 lg:col-span-3"
-                error={errors.vehicleType?.message}
-                required
-              >
-                <Select
-                  id="vehicleType"
-                  placeholder="Select Vehicle Type"
-                  options={VEHICLE_TYPES}
-                  {...register('vehicleType')}
-                />
-              </Field>
-              <Field
-                label="Vehicle Size"
-                htmlFor="vehicleSize"
-                className="sm:col-span-6"
-                error={errors.vehicleSize?.message}
-              >
-                <Input id="vehicleSize" placeholder="e.g. 10 feet" {...register('vehicleSize')} />
-              </Field>
-              <Field label="Opening KM" htmlFor="openingKm" className="sm:col-span-3" error={errors.openingKm?.message}>
-                <Input id="openingKm" type="number" min={0} step="0.01" {...register('openingKm')} />
-              </Field>
-              <Field label="Closing KM" htmlFor="closingKm" className="sm:col-span-3" error={errors.closingKm?.message}>
-                <Input id="closingKm" type="number" min={0} step="0.01" {...register('closingKm')} />
-              </Field>
-              <Field
-                label="Driver Name"
-                htmlFor="driverName"
-                className="sm:col-span-6"
-                error={errors.driverName?.message}
-              >
-                <Input id="driverName" placeholder="Driver Name" {...register('driverName')} />
-              </Field>
-              <Field
-                label="Driver Number"
-                htmlFor="driverNumber"
-                className="sm:col-span-3"
-                error={errors.driverNumber?.message}
-              >
-                <Input
-                  id="driverNumber"
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Driver Number"
-                  {...register('driverNumber')}
-                />
-              </Field>
-              <Field label="DL Number" htmlFor="dlNumber" className="sm:col-span-3" error={errors.dlNumber?.message}>
-                <Input
-                  id="dlNumber"
-                  placeholder="DL Number"
-                  className="uppercase"
-                  {...register('dlNumber', { setValueAs: toUpper })}
-                />
-              </Field>
-              <Field
-                label="Vehicle Owner / Supplier Name"
-                htmlFor="vehicleOwnerName"
-                className="sm:col-span-6"
-                error={errors.vehicleOwnerName?.message}
-              >
-                <Input
-                  id="vehicleOwnerName"
-                  placeholder="Vehicle Owner / Supplier Name"
-                  {...register('vehicleOwnerName')}
-                />
-              </Field>
-              <Field
-                label="Vehicle Owner Mobile"
-                htmlFor="vehicleOwnerMobile"
-                className="sm:col-span-3"
-                error={errors.vehicleOwnerMobile?.message}
-              >
-                <Input
-                  id="vehicleOwnerMobile"
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Vehicle Owner Mobile"
-                  {...register('vehicleOwnerMobile')}
-                />
-              </Field>
-              <Field
-                label="Vehicle Owner PAN No."
-                htmlFor="vehicleOwnerPan"
-                className="sm:col-span-3"
-                error={errors.vehicleOwnerPan?.message}
-              >
-                <Input
-                  id="vehicleOwnerPan"
-                  maxLength={10}
-                  placeholder="PAN No."
-                  className="uppercase"
-                  {...register('vehicleOwnerPan', { setValueAs: toUpper })}
-                />
-              </Field>
-              <Field
-                label="Vehicle Owner Address"
-                htmlFor="vehicleOwnerAddress"
-                className="sm:col-span-6"
-                error={errors.vehicleOwnerAddress?.message}
-                hint={SPECIAL_CHAR_HINT}
-              >
-                <Textarea
-                  id="vehicleOwnerAddress"
-                  rows={2}
-                  placeholder="Vehicle Owner Address"
-                  {...register('vehicleOwnerAddress')}
-                />
-              </Field>
-            </Section>
 
-            <Section title="Material Details">
-              <Field label="From" htmlFor="fromLocation" className="sm:col-span-6" error={errors.fromLocation?.message}>
-                <Input id="fromLocation" placeholder="From" {...register('fromLocation')} />
-              </Field>
-              <Field label="To" htmlFor="toLocation" className="sm:col-span-6" error={errors.toLocation?.message}>
-                <Input id="toLocation" placeholder="To" {...register('toLocation')} />
-              </Field>
-              <Field
-                label="Load/Material Details"
-                htmlFor="materialDetails"
-                className="sm:col-span-6 lg:col-span-12"
-                error={errors.materialDetails?.message}
-                hint={SPECIAL_CHAR_HINT}
-              >
-                <Textarea
-                  id="materialDetails"
-                  rows={2}
-                  placeholder="Load/Material Details"
-                  {...register('materialDetails')}
-                />
-              </Field>
-            </Section>
-
-            <Section title="Freight Details">
-              <Field
-                label="Actual Weight"
-                htmlFor="actualWeight"
-                className="sm:col-span-2"
-                error={errors.actualWeight?.message}
-              >
-                <Input id="actualWeight" type="number" min={0} step="0.01" {...register('actualWeight')} />
-              </Field>
-              <Field
-                label="Guarantee Weight"
-                htmlFor="guaranteeWeight"
-                className="sm:col-span-2"
-                error={errors.guaranteeWeight?.message}
-              >
-                <Input id="guaranteeWeight" type="number" min={0} step="0.01" {...register('guaranteeWeight')} />
-              </Field>
-              <Field label="Unit" htmlFor="unit" className="sm:col-span-2" error={errors.unit?.message}>
-                <Select id="unit" options={WEIGHT_UNITS} {...register('unit')} />
-              </Field>
-              <Field label="Rate" htmlFor="rate" className="sm:col-span-2" error={errors.rate?.message}>
-                <Input id="rate" type="number" min={0} step="0.01" {...register('rate')} />
-              </Field>
-              <div className="flex items-end pb-2.5 sm:col-span-2">
-                <CheckboxField id="isRateFixed" label="FIXED" {...register('isRateFixed')} />
+                <Section title="Party Details">
+                  <Field
+                    label="Party Name"
+                    htmlFor="partyName"
+                    className="sm:col-span-6"
+                    error={errors.partyName?.message}
+                  >
+                    <Input id="partyName" placeholder="Party Name" {...register('partyName')} />
+                  </Field>
+                  <Field
+                    label="Contact Number"
+                    htmlFor="partyContactNumber"
+                    className="sm:col-span-3"
+                    error={errors.partyContactNumber?.message}
+                  >
+                    <Input
+                      id="partyContactNumber"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="Contact Number"
+                      {...register('partyContactNumber')}
+                    />
+                  </Field>
+                  <Field
+                    label="GSTIN"
+                    htmlFor="partyGstin"
+                    className="sm:col-span-3"
+                    error={errors.partyGstin?.message}
+                  >
+                    <Input
+                      id="partyGstin"
+                      maxLength={15}
+                      placeholder="GSTIN"
+                      className="uppercase"
+                      {...register('partyGstin', { setValueAs: toUpper })}
+                    />
+                  </Field>
+                  <Field
+                    label="Email"
+                    htmlFor="partyEmail"
+                    className="sm:col-span-6"
+                    error={errors.partyEmail?.message}
+                  >
+                    <Input id="partyEmail" type="email" placeholder="Email" {...register('partyEmail')} />
+                  </Field>
+                  <Field
+                    label="Bank Name"
+                    htmlFor="bankName"
+                    className="sm:col-span-6"
+                    error={errors.bankName?.message}
+                  >
+                    <Input id="bankName" placeholder="Bank Name" {...register('bankName')} />
+                  </Field>
+                  <Field
+                    label="Address"
+                    htmlFor="partyAddress"
+                    className="sm:col-span-6"
+                    error={errors.partyAddress?.message}
+                    hint={SPECIAL_CHAR_HINT}
+                  >
+                    <Textarea id="partyAddress" rows={2} placeholder="Address" {...register('partyAddress')} />
+                  </Field>
+                </Section>
               </div>
-              <Field label="Freight Amount" htmlFor="freightAmount" className="sm:col-span-2">
-                <ReadOnlyAmount id="freightAmount" value={totals.freightAmount} />
-              </Field>
+            )}
 
-              <Field
-                label="Halting Charge"
-                htmlFor="haltingCharge"
-                className="sm:col-span-2"
-                error={errors.haltingCharge?.message}
-              >
-                <Input id="haltingCharge" type="number" min={0} step="0.01" {...register('haltingCharge')} />
-              </Field>
-              <Field
-                label="Other Charges"
-                htmlFor="otherCharges"
-                className="sm:col-span-2"
-                error={errors.otherCharges?.message}
-              >
-                <Input id="otherCharges" type="number" min={0} step="0.01" {...register('otherCharges')} />
-              </Field>
-              <Field label="Total Amount" htmlFor="totalAmount" className="sm:col-span-2 lg:col-span-3">
-                <ReadOnlyAmount id="totalAmount" value={totals.totalAmount} />
-              </Field>
-              <Field
-                label="Advance (Rs)"
-                htmlFor="advanceAmount"
-                className="sm:col-span-3 lg:col-span-2"
-                error={errors.advanceAmount?.message}
-              >
-                <Input
-                  id="advanceAmount"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  placeholder="Advance Amount"
-                  {...register('advanceAmount')}
-                />
-              </Field>
-              <Field label="Balance (Rs)" htmlFor="balanceAmount" className="sm:col-span-3">
-                <ReadOnlyAmount id="balanceAmount" value={totals.balanceAmount} />
-              </Field>
-            </Section>
+            {step === 1 && (
+              <Section title="Truck Details">
+                <Field
+                  label="Vehicle Number"
+                  htmlFor="vehicleState"
+                  className="sm:col-span-6 lg:col-span-9"
+                  error={vehicleNumberError}
+                  required
+                >
+                  <div className="grid grid-cols-4 gap-2 sm:gap-4 lg:grid-cols-12">
+                    <Input
+                      id="vehicleState"
+                      aria-label="State code"
+                      placeholder="TN"
+                      maxLength={2}
+                      className="uppercase lg:col-span-2"
+                      error={!!errors.vehicleState}
+                      {...register('vehicleState', { setValueAs: toUpper })}
+                    />
+                    <Input
+                      aria-label="District code"
+                      placeholder="12"
+                      inputMode="numeric"
+                      maxLength={2}
+                      className="lg:col-span-2"
+                      error={!!errors.vehicleDistrict}
+                      {...register('vehicleDistrict')}
+                    />
+                    <Input
+                      aria-label="Series"
+                      placeholder="BM"
+                      maxLength={3}
+                      className="uppercase lg:col-span-2"
+                      error={!!errors.vehicleSeries}
+                      {...register('vehicleSeries', { setValueAs: toUpper })}
+                    />
+                    <Input
+                      aria-label="Number"
+                      placeholder="1848"
+                      inputMode="numeric"
+                      maxLength={4}
+                      className="lg:col-span-6"
+                      error={!!errors.vehicleDigits}
+                      {...register('vehicleDigits')}
+                    />
+                  </div>
+                </Field>
+                <Field
+                  label="Vehicle Type"
+                  htmlFor="vehicleType"
+                  className="sm:col-span-6 lg:col-span-3"
+                  error={errors.vehicleType?.message}
+                  required
+                >
+                  <Select
+                    id="vehicleType"
+                    placeholder="Select Vehicle Type"
+                    options={VEHICLE_TYPES}
+                    {...register('vehicleType')}
+                  />
+                </Field>
+                <Field
+                  label="Vehicle Size"
+                  htmlFor="vehicleSize"
+                  className="sm:col-span-6"
+                  error={errors.vehicleSize?.message}
+                >
+                  <Input id="vehicleSize" placeholder="e.g. 10 feet" {...register('vehicleSize')} />
+                </Field>
+                <Field
+                  label="Opening KM"
+                  htmlFor="openingKm"
+                  className="sm:col-span-3"
+                  error={errors.openingKm?.message}
+                >
+                  <Input id="openingKm" type="number" min={0} step="0.01" {...register('openingKm')} />
+                </Field>
+                <Field
+                  label="Closing KM"
+                  htmlFor="closingKm"
+                  className="sm:col-span-3"
+                  error={errors.closingKm?.message}
+                >
+                  <Input id="closingKm" type="number" min={0} step="0.01" {...register('closingKm')} />
+                </Field>
+                <Field
+                  label="Driver Name"
+                  htmlFor="driverName"
+                  className="sm:col-span-6"
+                  error={errors.driverName?.message}
+                >
+                  <Input id="driverName" placeholder="Driver Name" {...register('driverName')} />
+                </Field>
+                <Field
+                  label="Driver Number"
+                  htmlFor="driverMobileNumber"
+                  className="sm:col-span-3"
+                  error={errors.driverMobileNumber?.message}
+                >
+                  <Input
+                    id="driverMobileNumber"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="Driver Number"
+                    {...register('driverMobileNumber')}
+                  />
+                </Field>
+                <Field label="DL Number" htmlFor="dlNumber" className="sm:col-span-3" error={errors.dlNumber?.message}>
+                  <Input
+                    id="dlNumber"
+                    placeholder="DL Number"
+                    className="uppercase"
+                    {...register('driverDlNumber', { setValueAs: toUpper })}
+                  />
+                </Field>
+                <Field
+                  label="Vehicle Owner / Supplier Name"
+                  htmlFor="vehicleOwnerName"
+                  className="sm:col-span-6"
+                  error={errors.vehicleOwnerName?.message}
+                >
+                  <Input
+                    id="vehicleOwnerName"
+                    placeholder="Vehicle Owner / Supplier Name"
+                    {...register('vehicleOwnerName')}
+                  />
+                </Field>
+                <Field
+                  label="Vehicle Owner Mobile"
+                  htmlFor="vehicleOwnerMobile"
+                  className="sm:col-span-3"
+                  error={errors.vehicleOwnerMobile?.message}
+                >
+                  <Input
+                    id="vehicleOwnerMobile"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="Vehicle Owner Mobile"
+                    {...register('vehicleOwnerMobile')}
+                  />
+                </Field>
+                <Field
+                  label="Vehicle Owner PAN No."
+                  htmlFor="vehicleOwnerPan"
+                  className="sm:col-span-3"
+                  error={errors.vehicleOwnerPan?.message}
+                >
+                  <Input
+                    id="vehicleOwnerPan"
+                    maxLength={10}
+                    placeholder="PAN No."
+                    className="uppercase"
+                    {...register('vehicleOwnerPan', { setValueAs: toUpper })}
+                  />
+                </Field>
+                <Field
+                  label="Vehicle Owner Address"
+                  htmlFor="vehicleOwnerAddress"
+                  className="sm:col-span-6"
+                  error={errors.vehicleOwnerAddress?.message}
+                  hint={SPECIAL_CHAR_HINT}
+                >
+                  <Textarea
+                    id="vehicleOwnerAddress"
+                    rows={2}
+                    placeholder="Vehicle Owner Address"
+                    {...register('vehicleOwnerAddress')}
+                  />
+                </Field>
+              </Section>
+            )}
 
-            <Section title="Truck Hiring Details">
-              <Field
-                label="Truck Hire Rate"
-                htmlFor="truckHireRate"
-                className="sm:col-span-3"
-                error={errors.truckHireRate?.message}
-              >
-                <Input id="truckHireRate" type="number" min={0} step="0.01" {...register('truckHireRate')} />
-              </Field>
-              <div className="flex items-end pb-2.5 sm:col-span-3">
-                <CheckboxField
-                  id="isTruckHireRateFixed"
-                  label="Truck Hire Rate FIXED"
-                  {...register('isTruckHireRateFixed')}
-                />
+            {step === 2 && (
+              <Section title="Material Details">
+                <Field
+                  label="From"
+                  htmlFor="fromLocation"
+                  className="sm:col-span-6"
+                  error={errors.fromLocation?.message}
+                >
+                  <Input id="fromLocation" placeholder="From" {...register('fromLocation')} />
+                </Field>
+                <Field label="To" htmlFor="toLocation" className="sm:col-span-6" error={errors.toLocation?.message}>
+                  <Input id="toLocation" placeholder="To" {...register('toLocation')} />
+                </Field>
+                <Field
+                  label="Load/Material Details"
+                  htmlFor="materialDetails"
+                  className="sm:col-span-6 lg:col-span-12"
+                  error={errors.materialDetails?.message}
+                  hint={SPECIAL_CHAR_HINT}
+                >
+                  <Textarea
+                    id="materialDetails"
+                    rows={2}
+                    placeholder="Load/Material Details"
+                    {...register('materialDetails')}
+                  />
+                </Field>
+              </Section>
+            )}
+
+            {step === 3 && (
+              <Section title="Freight Details">
+                <Field
+                  label="Actual Weight"
+                  htmlFor="actualWeight"
+                  className="sm:col-span-2"
+                  error={errors.actualWeight?.message}
+                >
+                  <Input id="actualWeight" type="number" min={0} step="0.01" {...register('actualWeight')} />
+                </Field>
+                <Field
+                  label="Guarantee Weight"
+                  htmlFor="guaranteeWeight"
+                  className="sm:col-span-2"
+                  error={errors.guaranteeWeight?.message}
+                >
+                  <Input id="guaranteeWeight" type="number" min={0} step="0.01" {...register('guaranteeWeight')} />
+                </Field>
+                <Field label="Unit" htmlFor="unit" className="sm:col-span-2" error={errors.unit?.message}>
+                  <Select id="unit" options={WEIGHT_UNITS} {...register('unit')} />
+                </Field>
+                <Field label="Rate" htmlFor="rate" className="sm:col-span-2" error={errors.rate?.message}>
+                  <Input id="rate" type="number" min={0} step="0.01" {...register('rate')} />
+                </Field>
+                <div className="flex items-end pb-2.5 sm:col-span-2">
+                  <CheckboxField id="isRateFixed" label="FIXED" {...register('isRateFixed')} />
+                </div>
+                <Field label="Freight Amount" htmlFor="freightAmount" className="sm:col-span-2">
+                  <ReadOnlyAmount id="freightAmount" value={totals.freightAmount} />
+                </Field>
+
+                <Field
+                  label="Halting Charge"
+                  htmlFor="haltingCharge"
+                  className="sm:col-span-2"
+                  error={errors.haltingCharge?.message}
+                >
+                  <Input id="haltingCharge" type="number" min={0} step="0.01" {...register('haltingCharge')} />
+                </Field>
+                <Field
+                  label="Other Charges"
+                  htmlFor="otherCharges"
+                  className="sm:col-span-2"
+                  error={errors.otherCharges?.message}
+                >
+                  <Input id="otherCharges" type="number" min={0} step="0.01" {...register('otherCharges')} />
+                </Field>
+                <Field label="Total Amount" htmlFor="totalAmount" className="sm:col-span-2 lg:col-span-3">
+                  <ReadOnlyAmount id="totalAmount" value={totals.totalAmount} />
+                </Field>
+                <Field
+                  label="Advance (Rs)"
+                  htmlFor="advanceAmount"
+                  className="sm:col-span-3 lg:col-span-2"
+                  error={errors.advanceAmount?.message}
+                >
+                  <Input
+                    id="advanceAmount"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="Advance Amount"
+                    {...register('advanceAmount')}
+                  />
+                </Field>
+                <Field label="Balance (Rs)" htmlFor="balanceAmount" className="sm:col-span-3">
+                  <ReadOnlyAmount id="balanceAmount" value={totals.balanceAmount} />
+                </Field>
+              </Section>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-6">
+                <Section title="Truck Hiring Details">
+                  <Field
+                    label="Truck Hire Rate"
+                    htmlFor="truckHireRate"
+                    className="sm:col-span-3"
+                    error={errors.truckHireRate?.message}
+                  >
+                    <Input id="truckHireRate" type="number" min={0} step="0.01" {...register('truckHireRate')} />
+                  </Field>
+                  <div className="flex items-end pb-2.5 sm:col-span-3">
+                    <CheckboxField
+                      id="isTruckHireRateFixed"
+                      label="Truck Hire Rate FIXED"
+                      {...register('isTruckHireRateFixed')}
+                    />
+                  </div>
+                  <Field label="Truck Hire Cost" htmlFor="truckHireCost" className="sm:col-span-3">
+                    <ReadOnlyAmount id="truckHireCost" value={totals.truckHireCost} />
+                  </Field>
+                  <Field
+                    label="Commission Amount"
+                    htmlFor="commissionAmount"
+                    className="sm:col-span-3"
+                    error={errors.commissionAmount?.message}
+                  >
+                    <Input id="commissionAmount" type="number" min={0} step="0.01" {...register('commissionAmount')} />
+                  </Field>
+                </Section>
+
+                <Section title="Other Remarks">
+                  <Field
+                    label="Remarks"
+                    htmlFor="remarks"
+                    className="sm:col-span-6 lg:col-span-12"
+                    error={errors.remarks?.message}
+                    hint={SPECIAL_CHAR_HINT}
+                  >
+                    <Textarea id="remarks" rows={2} placeholder="Remarks" {...register('remarks')} />
+                  </Field>
+                  <div className="flex flex-col gap-3 sm:col-span-6 sm:flex-row sm:gap-12 lg:col-span-12">
+                    <CheckboxField
+                      id="hideSupplierDetailsFromPdf"
+                      label="Hide Supplier/Owner Details from PDF"
+                      {...register('hideSupplierDetailsFromPdf')}
+                    />
+                    <CheckboxField
+                      id="hideGeneratedDatetimeFromPdf"
+                      label="Hide Generated Datetime from PDF"
+                      {...register('hideGeneratedDatetimeFromPdf')}
+                    />
+                  </div>
+                </Section>
               </div>
-              <Field label="Truck Hire Cost" htmlFor="truckHireCost" className="sm:col-span-3">
-                <ReadOnlyAmount id="truckHireCost" value={totals.truckHireCost} />
-              </Field>
-              <Field
-                label="Commission Amount"
-                htmlFor="commissionAmount"
-                className="sm:col-span-3"
-                error={errors.commissionAmount?.message}
-              >
-                <Input id="commissionAmount" type="number" min={0} step="0.01" {...register('commissionAmount')} />
-              </Field>
-            </Section>
+            )}
 
-            <Section title="Other Remarks">
-              <Field
-                label="Remarks"
-                htmlFor="remarks"
-                className="sm:col-span-6 lg:col-span-12"
-                error={errors.remarks?.message}
-                hint={SPECIAL_CHAR_HINT}
+            <div className="mt-6 flex justify-between border-t border-[var(--color-border)] pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => (step === 0 ? navigate('/loading-slip') : goBack())}
               >
-                <Textarea id="remarks" rows={2} placeholder="Remarks" {...register('remarks')} />
-              </Field>
-              <div className="flex flex-col gap-3 sm:col-span-6 sm:flex-row sm:gap-12 lg:col-span-12">
-                <CheckboxField
-                  id="hideSupplierDetailsFromPdf"
-                  label="Hide Supplier/Owner Details from PDF"
-                  {...register('hideSupplierDetailsFromPdf')}
-                />
-                <CheckboxField
-                  id="hideGeneratedDatetimeFromPdf"
-                  label="Hide Generated Datetime from PDF"
-                  {...register('hideGeneratedDatetimeFromPdf')}
-                />
-              </div>
-            </Section>
-
-            <div className="flex justify-center gap-3 border-t border-[var(--color-border)] pt-6">
-              <Button type="button" variant="outline" onClick={() => navigate('/loading-slip')}>
-                Cancel
+                {step === 0 ? 'Cancel' : 'Back'}
               </Button>
-              <Button type="submit" className="min-w-48" loading={isSaving}>
-                {isEdit ? 'Update Loading Slip' : 'Save Loading Slip'}
-              </Button>
+              {isLastStep ? (
+                <Button type="submit" loading={isSaving}>
+                  {isEdit ? 'Update Loading Slip' : 'Save Loading Slip'}
+                </Button>
+              ) : (
+                <Button type="button" onClick={goNext}>
+                  Next
+                </Button>
+              )}
             </div>
           </form>
         </CardContent>

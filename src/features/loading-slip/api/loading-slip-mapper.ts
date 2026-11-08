@@ -48,6 +48,8 @@ export function mapLoadingSlipToFormValues(slip: LoadingSlip): Partial<LoadingSl
   return {
     ...formFields,
     billGenerateDate: slip.billGenerateDate?.slice(0, 10),
+    // Stored values may be null / lowercase / padded; normalise so validation passes.
+    vehicleOwnerPan: (slip.vehicleOwnerPan ?? '').trim().toUpperCase(),
     ...splitVehicleNumber(vehicleNumber),
   } as Partial<LoadingSlipFormValues>
 }

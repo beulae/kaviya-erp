@@ -23,7 +23,7 @@ export const loadingSlipSchema = z
     financialYear: z.string().optional(),
 
     partyName: z.string().optional(),
-    partyContactNo: optionalPattern(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+    partyContactNumber: optionalPattern(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
     partyGstin: optionalPattern(/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/, 'Enter a valid GSTIN'),
     partyEmail: optionalPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Enter a valid email address'),
     bankName: z.string().optional(),
@@ -50,11 +50,16 @@ export const loadingSlipSchema = z
     openingKm: amount('Opening KM'),
     closingKm: amount('Closing KM'),
     driverName: z.string().optional(),
-    driverNumber: optionalPattern(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-    dlNumber: z.string().optional(),
+    driverMobileNumber: optionalPattern(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+    driverDlNumber: z.string().optional(),
     vehicleOwnerName: z.string().optional(),
     vehicleOwnerMobile: optionalPattern(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-    vehicleOwnerPan: optionalPattern(/^[A-Z]{5}\d{4}[A-Z]$/, 'Enter a valid PAN'),
+    vehicleOwnerPan: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .optional()
+      .refine((v) => !v || /^[A-Z]{5}\d{4}[A-Z]$/.test(v), 'Enter a valid PAN (format: ABCDE1234F)'),
     vehicleOwnerAddress: safeText(),
 
     fromLocation: z.string().optional(),

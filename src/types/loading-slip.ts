@@ -1,12 +1,12 @@
 export interface LoadingSlip {
-  id: number | string
+  loadingSlipId: number | string
   loadingSlipNo: string
   billGenerateDate: string
   branchCode?: string
   financialYear?: string
 
   partyName?: string
-  partyContactNo?: string
+  partyContactNumber?: string
   partyGstin?: string
   partyEmail?: string
   bankName?: string
@@ -18,8 +18,8 @@ export interface LoadingSlip {
   openingKm?: number
   closingKm?: number
   driverName?: string
-  driverNumber?: string
-  dlNumber?: string
+  driverMobileNumber?: string
+  driverDlNumber?: string
   vehicleOwnerName?: string
   vehicleOwnerMobile?: string
   vehicleOwnerPan?: string

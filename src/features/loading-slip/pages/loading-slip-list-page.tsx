@@ -59,7 +59,7 @@ export default function LoadingSlipListPage() {
         cell: ({ row }) => (
           <button
             className="rounded-[var(--radius-sm)] p-1.5 hover:bg-[var(--color-surface-muted)]"
-            onClick={() => navigate(`/loading-slip/${row.original.id}/edit`)}
+            onClick={() => navigate(`/loading-slip/${row.original.loadingSlipId}/edit`)}
             aria-label="Edit loading slip"
           >
             <Pencil className="h-4 w-4 text-[var(--color-muted-foreground)]" />
