@@ -30,7 +30,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (theme !== 'system') return
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const listener = () => setResolvedTheme(getSystemTheme())
+    const listener = () => {
+      const resolved = getSystemTheme()
+      setResolvedTheme(resolved)
+      document.documentElement.classList.toggle('dark', resolved === 'dark')
+    }
     mq.addEventListener('change', listener)
     return () => mq.removeEventListener('change', listener)
   }, [theme])
@@ -38,6 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>{children}</ThemeContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const ctx = React.useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider')

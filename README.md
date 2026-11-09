@@ -52,14 +52,123 @@ src/
   constants/      Navigation config, etc.
 ```
 
-## Connecting a real backend
+## Connecting a real backend and PostgreSQL
 
-The service layer (`src/features/*/api/*-service.ts`) currently simulates network
-latency against in-memory mock data so every screen works standalone. Each function's
-signature already matches a REST call — swap the body for an `apiClient` request (see
-`src/api/axios-instance.ts`, which already handles auth headers and refresh-token
-retry) and nothing else in the UI needs to change. Set `VITE_API_BASE_URL` in `.env`
-(see `.env.example`) once the Node.js API is available.
+The frontend already uses a centralized Axios client in `src/api/axios-instance.ts`.
+Set the API base URL before the app talks to your backend service:
+
+```env
+# .env
+VITE_API_BASE_URL=http://localhost:3000/api
+```
+
+If the backend runs in Docker, use the container host instead of `localhost`:
+
+```env
+VITE_API_BASE_URL=http://host.docker.internal:3000/api
+```
+
+When the frontend is served behind Nginx, keep it as:
+
+```env
+VITE_API_BASE_URL=/api/v1
+```
+
+### PostgreSQL connection details
+
+The Node.js/Express backend should connect to PostgreSQL using environment variables
+similar to these:
+
+```env
+# backend .env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=kaviya_erp
+DB_USER=postgres
+DB_PASSWORD=postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kaviya_erp
+PORT=3000
+```
+
+If the backend is inside Docker and PostgreSQL is another container on the same
+network, use the service name instead of `localhost`:
+
+```env
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=kaviya_erp
+DB_USER=postgres
+DB_PASSWORD=postgres
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kaviya_erp
+```
+
+### PostgreSQL in Docker
+
+Example `docker-compose.yml` service for the database:
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kaviya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kaviya_erp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+Then configure the backend to use:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kaviya_erp
+```
+
+### Connection steps
+
+1. Start PostgreSQL.
+2. Create the database if it does not exist:
+
+```bash
+createdb kaviya_erp
+```
+
+or from psql:
+
+```bash
+psql -U postgres -h localhost -p 5432
+CREATE DATABASE kaviya_erp;
+```
+
+3. Add the backend database variables to the backend `.env` file.
+4. Run the backend server.
+5. Confirm the app can reach the API at:
+
+```bash
+curl http://localhost:3000/api/health
+```
+
+or if the backend is being proxied through nginx:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+6. Start the frontend:
+
+```bash
+npm install
+npm run dev
+```
+
+The frontend uses the backend API; the backend is the component that connects to PostgreSQL and handles database reads/writes.
 
 ## What's implemented vs. scaffolded
 
@@ -83,16 +192,12 @@ parallel dark-mode palette. Update tokens there to re-theme the whole app.
 https://gitlab.com/beula.epsiba/kaviya-erp
 git remote add origin git@github.com:beula.epsiba/kaviya-erp.git
 
-Important Docker Commands:
--------------------------
-docker compose exec php php artisan make:controller UserController
-docker compose exec mysql mysql -uroot -proot tracefly
-
 
 Brings the docker up
 --------------------
 docker compose up -d --build
 docker compose up -d
+docker compose build --no-cache
 
 Brings the Frontend docker up
 --------------------
@@ -107,6 +212,8 @@ Removes db:
 docker compose down -v 
 docker volume rm mysql_data
 docker system prune --volumes
+docker system prune -a
+docker rmi -f $(docker images -aq)
 
 Safe:
 

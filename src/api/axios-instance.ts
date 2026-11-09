@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -80,14 +80,23 @@ apiClient.interceptors.response.use(
 
 export interface ApiErrorShape {
   message: string
+  error?: string
   errors?: Record<string, string[]>
+  details?: string[]
 }
 
 /** Normalizes an unknown thrown error into a user-facing message. */
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiErrorShape | undefined
-    return data?.message || error.message || 'Something went wrong. Please try again.'
+    return (
+      data?.message ||
+      data?.error ||
+      data?.details?.join(', ') ||
+      (data?.errors ? Object.values(data.errors).flat().join(', ') : undefined) ||
+      error.message ||
+      'Something went wrong. Please try again.'
+    )
   }
   return 'Something went wrong. Please try again.'
 }
