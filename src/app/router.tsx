@@ -20,10 +20,22 @@ import QuotationListPage from '@/features/quotation/pages/quotation-list-page'
 import CreateQuotationPage from '@/features/quotation/pages/create-quotation-page'
 import ViewQuotationPage from '@/features/quotation/pages/view-quotation-page'
 
+import LoadingSlipListPage from '@/features/loading-slip/pages/loading-slip-list-page'
+import CreateLoadingSlipPage from '@/features/loading-slip/pages/create-loading-slip-page'
+
+import PartyListPage from '@/features/party/pages/party-list-page'
+import CreatePartyPage from '@/features/party/pages/create-party-page'
+
+import TruckListPage from '@/features/truck/pages/truck-list-page'
+import CreateTruckPage from '@/features/truck/pages/create-truck-page'
+
+import CustomersPage from '@/features/customers/pages/customers-page'
+import DriversPage from '@/features/drivers/pages/drivers-page'
+import VehiclesPage from '@/features/vehicles/pages/vehicles-page'
 import CreateMastersPage from '@/features/masters/pages/create-masters-page'
-import PartyListPage from '@/features/masters/pages/party-list-page'
+
 import AddNewPartyPage from '@/features/masters/pages/add-new-party-page'
-import TruckListPage from '@/features/masters/pages/truck-list-page'
+
 import AddNewTruckPage from '@/features/masters/pages/add-new-truck-page'
 import SupplierListPage from '@/features/masters/pages/supplier-list-page'
 import AddNewSupplierPage from '@/features/masters/pages/add-new-supplier-page'
@@ -75,8 +87,26 @@ export function AppRouter() {
           <Route path="/quotation/:id/view" element={<ViewQuotationPage />} />
           <Route path="/quotation/:id/edit" element={<CreateQuotationPage />} />
 
+          <Route path="/loading-slip" element={<LoadingSlipListPage />} />
+          <Route path="/loading-slip/create" element={<CreateLoadingSlipPage />} />
+          <Route path="/loading-slip/:id/edit" element={<CreateLoadingSlipPage />} />
+
           <Route path="/operations/loading-advice" element={<ComingSoonPage title="Loading Advice" />} />
           <Route path="/operations/dispatch" element={<ComingSoonPage title="Dispatch" />} />
+
+          <Route path="/masters/party" element={<PartyListPage />} />
+          <Route path="/masters/party/create" element={<CreatePartyPage />} />
+          <Route path="/masters/party/:id/edit" element={<CreatePartyPage />} />
+
+          <Route path="/masters/truck" element={<TruckListPage />} />
+          <Route path="/masters/truck/create" element={<CreateTruckPage />} />
+          <Route path="/masters/truck/:id/edit" element={<CreateTruckPage />} />
+
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/drivers" element={<DriversPage />} />
+          <Route path="/vehicles" element={<VehiclesPage />} />
+          <Route path="/masters/branches" element={<ComingSoonPage title="Branches" />} />
+          <Route path="/masters/routes" element={<ComingSoonPage title="Routes" />} />
 
           <Route path="/masters" element={<CreateMastersPage />} />
           <Route path="/masters/create" element={<CreateMastersPage />} />

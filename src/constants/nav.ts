@@ -38,6 +38,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { label: 'Bilty', to: '/bilty' },
       { label: 'Quotation', to: '/quotation' },
+      { label: 'Loading Slip', to: '/loading-slip' },
       { label: 'Loading Advice', to: '/operations/loading-advice' },
       { label: 'Dispatch', to: '/operations/dispatch' },
     ],
@@ -45,7 +46,19 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Masters',
     icon: Warehouse,
+<<<<<<< HEAD
+    children: [
+      { label: 'Party List', to: '/masters/party' },
+      { label: 'Truck List', to: '/masters/truck' },
+      { label: 'Customers', to: '/customers' },
+      { label: 'Drivers', to: '/drivers' },
+      { label: 'Vehicles', to: '/vehicles' },
+      { label: 'Branches', to: '/masters/branches' },
+      { label: 'Routes', to: '/masters/routes' },
+    ],
+=======
     children: [...MASTER_LIST_ITEMS],
+>>>>>>> main
   },
   {
     label: 'Accounts',

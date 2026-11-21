@@ -219,3 +219,7 @@ Safe:
 
 docker compose down 
 docker compose stop (wont remove db)
+
+WIndows machine
+NPM command
+npm.cmd run dev
