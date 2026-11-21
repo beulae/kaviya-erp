@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchQuotations,
+  fetchQuotationNumber,
   fetchQuotationById,
   createQuotation,
   updateQuotation,
@@ -20,6 +21,14 @@ export function useQuotations(params: QuotationListParams) {
     queryKey: quotationKeys.list(params),
     queryFn: () => fetchQuotations(params),
     placeholderData: (prev) => prev,
+  })
+}
+
+export function useQuotationNumber(enabled = true) {
+  return useQuery({
+    queryKey: [...quotationKeys.all, 'quotation-number'],
+    queryFn: fetchQuotationNumber,
+    enabled,
   })
 }
 

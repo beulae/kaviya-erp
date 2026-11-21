@@ -31,6 +31,14 @@ export function ProfileSignatureSection({
 }: ProfileSignatureSectionProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [filePreview, setFilePreview] = React.useState<string | undefined>()
+  const previousSignature = existingSignatureUrl ? (
+    <div>
+      <p className="mb-1 text-xs font-medium text-[var(--color-muted-foreground)]">Previous E-Signature</p>
+      <div className="flex h-24 w-48 items-center justify-center overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <img src={existingSignatureUrl} alt="Previous signature" className="h-full w-full object-contain" />
+      </div>
+    </div>
+  ) : null
 
   React.useEffect(() => {
     if (!signatureFile) {
@@ -45,7 +53,9 @@ export function ProfileSignatureSection({
   return (
     <div className="space-y-4">
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-[var(--color-foreground)]">Signature Method</legend>
+        <legend className="mb-2 text-sm font-medium text-[var(--color-foreground)]">
+          Update Signature Using <span className="text-[var(--color-danger)]">*</span>
+        </legend>
         <div className="flex flex-wrap gap-4">
           {SIGNATURE_METHOD_OPTIONS.map((opt) => (
             <label key={opt.value} className="flex items-center gap-2 text-sm text-[var(--color-foreground)]">
@@ -64,45 +74,56 @@ export function ProfileSignatureSection({
       </fieldset>
 
       {signatureMethod === 'pad' && (
-        <Field label="Sign Here" htmlFor="signaturePad" error={padError}>
-          <SignaturePad value={signaturePad} onChange={onSignaturePadChange} error={!!padError} />
-        </Field>
+        <div className="grid items-end gap-4 lg:grid-cols-[minmax(0,1fr)_12rem]">
+          <Field label="E-Signature" htmlFor="signaturePad" error={padError} required className="max-w-md">
+            <SignaturePad value={signaturePad} onChange={onSignaturePadChange} error={!!padError} />
+          </Field>
+          {previousSignature}
+        </div>
       )}
 
       {signatureMethod === 'upload' && (
-        <Field label="Upload Signature" htmlFor="signatureFile" error={fileError}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-40 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-              {filePreview ? (
-                <img src={filePreview} alt="Signature preview" className="h-full w-full object-contain" />
-              ) : (
-                <span className="text-xs text-[var(--color-muted-foreground)]">No file selected</span>
-              )}
+        <div className="grid items-end gap-4 lg:grid-cols-[minmax(0,1fr)_12rem]">
+          <Field label="E-Signature" htmlFor="signatureFile" error={fileError} required className="max-w-md">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex h-24 w-48 shrink-0 items-center justify-center overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)]">
+                {filePreview ? (
+                  <img src={filePreview} alt="Signature preview" className="h-full w-full object-contain" />
+                ) : (
+                  <span className="text-xs text-[var(--color-muted-foreground)]">No file selected</span>
+                )}
+              </div>
+              <div>
+                <input
+                  ref={fileInputRef}
+                  id="signatureFile"
+                  type="file"
+                  accept={SIGNATURE_ACCEPTED_TYPES.join(',')}
+                  className="hidden"
+                  onChange={(e) => {
+                    onSignatureFileChange(e.target.files?.[0])
+                    e.target.value = ''
+                  }}
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" /> {filePreview ? 'Replace File' : 'Choose File'}
+                </Button>
+                <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">PNG or JPG, up to 2 MB.</p>
+                {signatureFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1"
+                    onClick={() => onSignatureFileChange(undefined)}
+                  >
+                    Remove selected file
+                  </Button>
+                )}
+              </div>
             </div>
-            <div>
-              <input
-                ref={fileInputRef}
-                id="signatureFile"
-                type="file"
-                accept={SIGNATURE_ACCEPTED_TYPES.join(',')}
-                className="hidden"
-                onChange={(e) => onSignatureFileChange(e.target.files?.[0])}
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4" /> {filePreview ? 'Replace File' : 'Choose File'}
-              </Button>
-              <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">PNG or JPG, up to 2 MB.</p>
-            </div>
-          </div>
-        </Field>
-      )}
-
-      {existingSignatureUrl && (
-        <div>
-          <p className="mb-1 text-xs font-medium text-[var(--color-muted-foreground)]">Previous E-Signature</p>
-          <div className="flex h-20 w-40 items-center justify-center overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-            <img src={existingSignatureUrl} alt="Previous signature" className="h-full w-full object-contain" />
-          </div>
+          </Field>
+          {previousSignature}
         </div>
       )}
     </div>

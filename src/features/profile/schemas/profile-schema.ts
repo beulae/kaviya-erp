@@ -23,14 +23,14 @@ const optionalText = (max?: number) => {
 export const editProfileSchema = z
   .object({
     transporterName: z.string().trim().min(2, 'Transporter name is required.'),
-    aboutTransport: optionalText(500),
+    aboutTransport: optionalText(100),
 
     riskType: z.enum(['owner', 'carrier'], { error: 'Select a risk type.' }),
     userType: z.enum(['fleetOwner', 'broker'], { error: 'Select a user type.' }),
 
     registrationNumber: optionalText(50),
     gstNumber: optionalText(15),
-    dailyService: z.array(z.string()).default([]),
+    dailyService: z.array(z.string()).min(1, 'Select at least one service area.'),
 
     city: z.string().trim().min(1, 'City is required.'),
     state: z.string().trim().min(1, 'State is required.'),
@@ -51,7 +51,7 @@ export const editProfileSchema = z
       .or(z.literal('')),
     email: z.string().trim().toLowerCase().pipe(z.email('Please enter a valid email address.')),
     officeBranch: optionalText(100),
-    website: optionalText(200),
+    website: optionalText(100),
 
     bankAccountNumber: optionalText(30),
     bankName: optionalText(100),
@@ -63,7 +63,6 @@ export const editProfileSchema = z
 
     // Logo
     existingLogoUrl: z.string().optional().or(z.literal('')),
-    removeLogo: z.boolean().default(false),
     logoFile: z.instanceof(File).optional(),
 
     // Signature

@@ -30,6 +30,7 @@ export function useDownloadQuotationPdf() {
         ])
 
         if (!quotation) throw new Error('Quotation not found')
+        if (!profile) throw new Error('Transporter profile not found')
         pdf.saveBlob(await pdf.createQuotationPdf(quotation, profile))
       } catch {
         toast({

@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-const MAX_QUOTATION_NO = 10 ** 15 - 1
-
 export const quotationArticleSchema = z.object({
   numberOfArticle: z.coerce.number().int('Whole number only').min(0, 'Cannot be negative').default(0),
   length: z.coerce.number().min(0, 'Cannot be negative').default(0),
@@ -11,11 +9,7 @@ export const quotationArticleSchema = z.object({
 
 // --- Step 1: Quotation & Company -------------------------------------------------
 export const quotationCompanySchema = z.object({
-  quotationNo: z.coerce
-    .number({ error: 'Quotation number is required' })
-    .int('Must be a whole number')
-    .min(0, 'Must be 0 or greater')
-    .max(MAX_QUOTATION_NO, 'Must be at most 15 digits'),
+  quotationNo: z.string().trim().min(1, 'Quotation number is required').max(32, 'Must be at most 32 characters'),
   quotationDate: z.string().min(1, 'Quotation date is required'),
 
   companyName: z.string().trim().min(2, 'Company name is required'),

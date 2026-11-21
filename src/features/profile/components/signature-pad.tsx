@@ -29,14 +29,15 @@ export function SignaturePad({ value, onChange, className, error }: SignaturePad
     if (!canvas || !container) return
     const ratio = window.devicePixelRatio || 1
     const { width } = container.getBoundingClientRect()
-    const height = 180
+    const height = 120
+    const previousValue = canvas.width > 0 && canvas.height > 0 ? canvas.toDataURL('image/png') : undefined
     canvas.width = width * ratio
     canvas.height = height * ratio
     canvas.style.width = `${width}px`
     canvas.style.height = `${height}px`
     const ctx = canvas.getContext('2d')
     if (ctx) {
-      ctx.scale(ratio, ratio)
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
       ctx.lineWidth = 2
@@ -45,6 +46,11 @@ export function SignaturePad({ value, onChange, className, error }: SignaturePad
       // foreground token instead of a hard-coded color.
       const resolved = getComputedStyle(container).getPropertyValue('--color-foreground').trim()
       ctx.strokeStyle = resolved || '#1f2933'
+      if (previousValue) {
+        const image = new Image()
+        image.onload = () => ctx.drawImage(image, 0, 0, width, height)
+        image.src = previousValue
+      }
     }
   }, [])
 
@@ -54,24 +60,23 @@ export function SignaturePad({ value, onChange, className, error }: SignaturePad
     return () => window.removeEventListener('resize', setupCanvas)
   }, [setupCanvas])
 
-  // Redraw an existing base64 value (e.g. restored form state) when it changes externally.
   React.useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !value) return
+    if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    const ratio = window.devicePixelRatio || 1
+    ctx.clearRect(0, 0, canvas.width / ratio, canvas.height / ratio)
+    hasStroke.current = false
+    if (!value) return
     const img = new Image()
     img.onload = () => {
-      const ratio = window.devicePixelRatio || 1
       ctx.clearRect(0, 0, canvas.width / ratio, canvas.height / ratio)
       ctx.drawImage(img, 0, 0, canvas.width / ratio, canvas.height / ratio)
       hasStroke.current = true
     }
     img.src = value
-    // Only re-draw on mount / explicit external reset — subsequent local
-    // strokes update the canvas directly without going through this effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [value])
 
   const getPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -104,7 +109,7 @@ export function SignaturePad({ value, onChange, className, error }: SignaturePad
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
-    if (canvas) canvas.releasePointerCapture(e.pointerId)
+    if (canvas?.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId)
     isDrawing.current = false
     lastPoint.current = null
     if (hasStroke.current && canvas) {
@@ -134,10 +139,11 @@ export function SignaturePad({ value, onChange, className, error }: SignaturePad
       >
         <canvas
           ref={canvasRef}
-          className="block h-[180px] w-full touch-none"
+          className="block h-[120px] w-full touch-none"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerUp}
           role="img"
           aria-label="Signature drawing area"

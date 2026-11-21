@@ -79,7 +79,7 @@ export const DEMURRAGE_APPLICABLE_AFTER_OPTIONS: SelectOption[] = opts([
   'More than 5 Days',
 ])
 
-// Local city/state suggestion data used for the From/To/Company autocomplete
+// Local city/state suggestion data used for the From/To autocomplete
 // fields. The legacy system sourced these from a location master API; no such
 // hook exists yet in this project, so we fall back to a static in-memory list
 // via the reusable `AutocompleteInput` abstraction rather than embedding a
@@ -100,16 +100,6 @@ export const CITY_STATE_SUGGESTIONS: string[] = [
   'Kolkata, West Bengal',
   'Ahmedabad, Gujarat',
   'Kochi, Kerala',
-]
-
-export const COMPANY_NAME_SUGGESTIONS: string[] = [
-  'Sri Vinayaga Traders',
-  'AVM Textiles',
-  'Sun Agro Foods',
-  'Coastal Steels',
-  'Metro Distributors',
-  'Green Valley Mart',
-  'Prime Retail Co',
 ]
 
 export const MAX_ARTICLES = 5
